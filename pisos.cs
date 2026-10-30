@@ -1,5 +1,5 @@
 
 private class Pisos
 {
-    private string pisos = "chlen";
+    private string pisos = "chleniki";
 }
