@@ -32,4 +32,8 @@ public class StateMachine<TState> where TState : class, IState
     {
         m_currentState?.StateUpdate();
     }
+    public void FixedStateUpdate()
+    {
+        m_currentState?.FixedStateUpdate();
+    }
 }
