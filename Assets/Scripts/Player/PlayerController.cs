@@ -1,7 +1,7 @@
 using UnityEngine.UI;
 using UnityEngine;
 
-public class BotController : MonoBehaviour
+public class PlayerController : MonoBehaviour
 {
     private StateMachine<PlayerState> m_machine;
 
@@ -11,6 +11,7 @@ public class BotController : MonoBehaviour
         m_machine = new StateMachine<PlayerState>();
 
         m_machine.AddState(new PlayableState(m_machine, data));
+        
         //m_machine.AddState(new BotRoamingState(m_machine, data));
         //m_machine.AddState(new BotChaseState(m_machine, data));
         //m_machine.AddState(new BotAttackState(m_machine, data, m_attacks));
