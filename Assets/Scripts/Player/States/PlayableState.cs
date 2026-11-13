@@ -1,5 +1,6 @@
 using StateMachine;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Player.States
 {
@@ -14,7 +15,11 @@ namespace Player.States
             m_data.pointClickAction.action.started += PointClickHandler;
         }
 
-        public override void Exit() { }
+        public override void Exit()
+        {
+            m_data.pointClickAction.action.Disable();
+            m_data.pointClickAction.action.started -= PointClickHandler;
+        }
 
         public override void StateUpdate()  
         {
@@ -24,7 +29,7 @@ namespace Player.States
             // physics
         }
         
-        private void PointClickHandler()
+        private void PointClickHandler(InputAction.CallbackContext ctx)
         {
             Ray ray = m_data.camera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
