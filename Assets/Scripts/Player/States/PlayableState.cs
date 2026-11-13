@@ -1,20 +1,23 @@
-using UnityEngine.UI;
+using StateMachine;
 
-public class PlayableState : PlayerState
+namespace Player.States
 {
-    public PlayableState(StateMachine<PlayerState> machine, PlayerContext data)
-        : base(machine, data) { }
-
-    public override void Enter() { }
-
-    public override void Exit() { }
-
-    public override void StateUpdate()  
+    public class PlayableState : PlayerState
     {
-        // условия переходов и поведение
-    }
-    public override void FixedStateUpdate()
-    {
-        // physics
+        public PlayableState(StateMachine<PlayerState> machine, PlayerContext data)
+            : base(machine, data) { }
+
+        public override void Enter() { }
+
+        public override void Exit() { }
+
+        public override void StateUpdate()  
+        {
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        }
+        public override void FixedStateUpdate()
+        {
+            // physics
+        }
     }
 }
