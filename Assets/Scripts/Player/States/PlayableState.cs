@@ -9,32 +9,29 @@ namespace Player.States
         public PlayableState(StateMachine<PlayerState> machine, PlayerContext data)
             : base(machine, data) { }
 
-        public override void Enter()
+        public override void Enter() 
         {
-            m_data.pointClickAction.action.Enable();
-            m_data.pointClickAction.action.started += PointClickHandler;
+            m_data.inputReader.onPoint += GoToMousePos;
         }
 
-        public override void Exit()
+        public override void Exit() 
         {
-            m_data.pointClickAction.action.Disable();
-            m_data.pointClickAction.action.started -= PointClickHandler;
+            m_data.inputReader.onPoint -= GoToMousePos;
         }
 
-        public override void StateUpdate()  
-        {
-        }
+        public override void StateUpdate()  { }
+        
         public override void FixedStateUpdate()
         {
             // physics
         }
         
-        private void PointClickHandler(InputAction.CallbackContext ctx)
+        private void GoToMousePos(Vector2 mousePos)
         {
-            Ray ray = m_data.camera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
+            Debug.Log($"camera = {m_data.camera}");
+            Ray ray = m_data.camera.ScreenPointToRay(mousePos);
 
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 Debug.Log("[PlayableState] Got the ray hit on " + hit.point);
                 m_data.walkControl.GoToPoint(hit.point);

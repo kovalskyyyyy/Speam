@@ -1,6 +1,6 @@
 using Entities;
+using Player;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace Player
 {
@@ -12,6 +12,6 @@ namespace Player
         public Rigidbody2D body { get; }
         public Camera camera { get; set; }
         public Walkable walkControl { get; set; }
-        public InputActionReference pointClickAction { get; set; }
+        public InputReader inputReader { get; set; }
     }
 }
