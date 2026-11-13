@@ -113,6 +113,4 @@ InitTestScene*.unity*
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
 .vsconfig
-.idea/.idea.Speam1/.idea/indexLayout.xml
-.idea/.idea.Speam1/.idea/workspace.xml
-/.idea/.idea.Speam/.idea
+.idea
