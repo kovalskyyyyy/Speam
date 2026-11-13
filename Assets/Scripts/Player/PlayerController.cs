@@ -1,30 +1,34 @@
-using UnityEngine.UI;
+using Player.States;
+using StateMachine;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+namespace Player
 {
-    private StateMachine<PlayerState> m_machine;
-
-    private void Awake()
+    public class PlayerController : MonoBehaviour
     {
-        PlayerContext data = new PlayerContext();
-        m_machine = new StateMachine<PlayerState>();
+        private StateMachine<PlayerState> m_machine;
 
-        m_machine.AddState(new PlayableState(m_machine, data));
+        private void Awake()
+        {
+            PlayerContext data = new PlayerContext();
+            m_machine = new StateMachine<PlayerState>();
+
+            m_machine.AddState(new PlayableState(m_machine, data));
         
-        //m_machine.AddState(new BotRoamingState(m_machine, data));
-        //m_machine.AddState(new BotChaseState(m_machine, data));
-        //m_machine.AddState(new BotAttackState(m_machine, data, m_attacks));
+            //m_machine.AddState(new BotRoamingState(m_machine, data));
+            //m_machine.AddState(new BotChaseState(m_machine, data));
+            //m_machine.AddState(new BotAttackState(m_machine, data, m_attacks));
 
-        m_machine.ChangeState<PlayableState>();
-    }
+            m_machine.ChangeState<PlayableState>();
+        }
 
-    private void Update()
-    {
-        m_machine.StateUpdate();
-    }
-    private void FixedUpdate()
-    {
-        m_machine.FixedStateUpdate();
+        private void Update()
+        {
+            m_machine.StateUpdate();
+        }
+        private void FixedUpdate()
+        {
+            m_machine.FixedStateUpdate();
+        }
     }
 }

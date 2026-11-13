@@ -1,9 +1,12 @@
 using UnityEngine;
 
-public class PlayerContext
+namespace Player
 {
-    //public WalkableScript Walker;
-    //public InputManager Input;
-    //public PlayerAnimationView Anim;
-    public Rigidbody2D Body; // или Rigidbody
+    public class PlayerContext
+    {
+        //public WalkableScript Walker;
+        //public InputManager Input;
+        //public PlayerAnimationView Anim;
+        public Rigidbody2D Body; // пїЅпїЅпїЅ Rigidbody
+    }
 }
