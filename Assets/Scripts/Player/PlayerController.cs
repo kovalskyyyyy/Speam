@@ -1,9 +1,11 @@
 using Player.States;
 using StateMachine;
 using UnityEngine;
+using Entities;
 
 namespace Player
 {
+    [RequireComponent(typeof(Walkable))]
     public class PlayerController : MonoBehaviour
     {
         private StateMachine<PlayerState> m_machine;
@@ -11,6 +13,8 @@ namespace Player
         private void Awake()
         {
             PlayerContext data = new PlayerContext();
+            data.walkControl = GetComponent<Walkable>();
+            
             m_machine = new StateMachine<PlayerState>();
 
             m_machine.AddState(new PlayableState(m_machine, data));
