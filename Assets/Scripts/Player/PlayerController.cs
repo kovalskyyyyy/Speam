@@ -1,30 +1,45 @@
-using UnityEngine.UI;
+using Player.States;
+using StateMachine;
 using UnityEngine;
+using Entities;
+using UnityEngine.InputSystem;
 
-public class PlayerController : MonoBehaviour
+namespace Player
 {
-    private StateMachine<PlayerState> m_machine;
-
-    private void Awake()
+    [RequireComponent(typeof(Walkable))]
+    public class PlayerController : MonoBehaviour
     {
-        PlayerContext data = new PlayerContext();
-        m_machine = new StateMachine<PlayerState>();
+        [SerializeField]
+        private Camera camera; // TODO: Get used of this SerializeField and 
+                               // make camera finding with code
 
-        m_machine.AddState(new PlayableState(m_machine, data));
+        private StateMachine<PlayerState> m_machine;
+
+        private void Awake()
+        {
+            PlayerContext data = new PlayerContext();
+            data.camera = camera;
+            data.walkControl = GetComponent<Walkable>();
+            data.inputReader = new InputReader();
+            
+            
+            m_machine = new StateMachine<PlayerState>();
+            m_machine.AddState(new PlayableState(m_machine, data));
         
-        //m_machine.AddState(new BotRoamingState(m_machine, data));
-        //m_machine.AddState(new BotChaseState(m_machine, data));
-        //m_machine.AddState(new BotAttackState(m_machine, data, m_attacks));
+            //m_machine.AddState(new BotRoamingState(m_machine, data));
+            //m_machine.AddState(new BotChaseState(m_machine, data));
+            //m_machine.AddState(new BotAttackState(m_machine, data, m_attacks));
 
-        m_machine.ChangeState<PlayableState>();
-    }
+            m_machine.ChangeState<PlayableState>();
+        }
 
-    private void Update()
-    {
-        m_machine.StateUpdate();
-    }
-    private void FixedUpdate()
-    {
-        m_machine.FixedStateUpdate();
+        private void Update()
+        {
+            m_machine.StateUpdate();
+        }
+        private void FixedUpdate()
+        {
+            m_machine.FixedStateUpdate();
+        }
     }
 }

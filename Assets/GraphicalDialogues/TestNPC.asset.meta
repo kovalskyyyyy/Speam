@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/GraphicalDialogues/TestNPC.asset.meta
 guid: 50e422f02ae6bca40a9bc6b473b4adbd
+========
+guid: 5a0ca3af4011605ae8f12356cf5c2d7e
+>>>>>>>> CharacterWalking:Assets/Scenes/WalkingTest/New Terrain.asset.meta
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 11400000
