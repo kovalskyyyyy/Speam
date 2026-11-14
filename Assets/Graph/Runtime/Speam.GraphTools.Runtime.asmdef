@@ -5,9 +5,7 @@
 		"Unity.TextMeshPro",
 		"Unity.InputSystem"
 	],
-	"includePlatforms": [
-		"Editor"
-	],
+	"includePlatforms": [],
 	"excludePlatforms": [],
 	"allowUnsafeCode": false,
 	"overrideReferences": false,
