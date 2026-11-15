@@ -114,6 +114,7 @@ InitTestScene*.unity*
 /[Aa]ssets/[Ss]ceneDependencyCache*
 ProjectSettings/EditorBuildSettings.asset
 .vsconfig
+.vscode
 .idea
 ProjectSettings/ShaderGraphSettings.asset
 Assets/Chars/CharModel/Dmitry.blend.meta
