@@ -20,7 +20,7 @@ namespace DialogueSystem.Editor
                 .WithDisplayName("Speaker")
                 .Build();
             context.AddInputPort<string>(IN_TEXT)
-                .AsTextArea(5, 8)
+                .AsTextArea(1, 8)
                 .Build();
         }
     }
