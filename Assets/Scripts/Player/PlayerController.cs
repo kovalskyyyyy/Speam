@@ -9,6 +9,9 @@ namespace Player
     [RequireComponent(typeof(Walkable))]
     public class PlayerController : MonoBehaviour
     {
+
+        public StateMachine<PlayerState> stateMachine => m_machine;
+
         [SerializeField]
         private Camera camera; // TODO: Get used of this SerializeField and 
                                // make camera finding with code
