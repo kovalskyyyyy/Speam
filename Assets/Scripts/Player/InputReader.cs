@@ -7,12 +7,14 @@ namespace Player
     [CreateAssetMenu(fileName = "InputReader", menuName = "Game/Input Reader")]
     public class InputReader : ScriptableObject, InputSystem_Actions.IPlayerActions
     {
-        public event Action<Vector2> onPoint;
+        public event Action<InputAction.CallbackContext> onPoint;
 
         public void OnPoint(InputAction.CallbackContext context) 
         {
-            if (context.performed)
-                onPoint?.Invoke(Mouse.current.position.ReadValue());
+            // if (context.performed)
+            //     onPoint?.Invoke(Mouse.current.position.ReadValue());
+
+            onPoint?.Invoke(context);
         }
 
         public void OnMove    (InputAction.CallbackContext context) {}

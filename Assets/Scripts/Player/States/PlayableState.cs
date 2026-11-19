@@ -1,6 +1,8 @@
 using StateMachine;
 using UnityEngine;
 
+using UnityEngine.InputSystem;
+
 namespace Player.States
 {
     public class PlayableState : PlayerState
@@ -11,14 +13,14 @@ namespace Player.States
         public override void Enter() 
         {
             m_data.walkControl.animationView = m_data.animationView; // I don't like this referencing
-            m_data.inputReader.onPoint += GoToMousePos;
+            m_data.inputReader.onPoint += UpdateMouseCancellation;
 
             Debug.Log(m_data.body);
         }
 
         public override void Exit() 
         {
-            m_data.inputReader.onPoint -= GoToMousePos;
+            m_data.inputReader.onPoint -= UpdateMouseCancellation;
         }
 
         public override void StateUpdate()  { }
@@ -31,11 +33,23 @@ namespace Player.States
             // float speedNormalized = Vector3.Dot(velocityNormilized, m_data.body.transform.forward);
             //
             // m_data.animationView.SetSpeed(speedNormalized);
+            //
+            
+            if (!m_wasMouseCancelled)
+                GoToMousePos(Mouse.current.position.ReadValue());
+        }
+
+        private bool m_wasMouseCancelled = true;
+
+        private void UpdateMouseCancellation(InputAction.CallbackContext context) {
+            if (context.performed)
+                m_wasMouseCancelled = false;
+            else if (context.canceled)
+                m_wasMouseCancelled = true;
         }
         
         private void GoToMousePos(Vector2 mousePos)
         {
-            Debug.Log($"camera = {m_data.camera}");
             Ray ray = m_data.camera.ScreenPointToRay(mousePos);
 
             if (Physics.Raycast(ray, out RaycastHit hit))
