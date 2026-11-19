@@ -112,15 +112,7 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
-ProjectSettings/EditorBuildSettings.asset
 .vsconfig
 .vscode
 .idea
-ProjectSettings/ShaderGraphSettings.asset
-Assets/Chars/CharModel/Dmitry.blend.meta
-Assets/Chars/CharModel/FatherOfDen.blend.meta
-Assets/Chars/CharModel/Ivan.blend.meta
-Assets/GraphicalDialogues/TestNPC.asset.meta
-Assets/Scenes/WalkingTest/New Terrain.asset.meta
-Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset
-Packages/packages-lock.json
+ProjectSettings/EditorBuildSettings.asset
