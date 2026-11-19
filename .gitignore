@@ -115,3 +115,6 @@ InitTestScene*.unity*
 .vsconfig
 .idea/.idea.Speam1/.idea/indexLayout.xml
 .idea/.idea.Speam1/.idea/workspace.xml
+.vscode
+.idea
+ProjectSettings/EditorBuildSettings.asset

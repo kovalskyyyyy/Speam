@@ -1,8 +1,11 @@
 // IState.cs
-public interface IState
+namespace StateMachine
 {
-    void Enter(); 
-    void Exit();
-    void StateUpdate();
-    void FixedStateUpdate();
+    public interface IState
+    {
+        void Enter(); 
+        void Exit();
+        void StateUpdate();
+        void FixedStateUpdate();
+    }
 }

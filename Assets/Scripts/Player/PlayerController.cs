@@ -1,30 +1,57 @@
-using UnityEngine.UI;
+using Player.States;
+using StateMachine;
+using Animations;
+using CustomDebug;
+
 using UnityEngine;
+using Entities;
+using Unity.VisualScripting;
 
-public class PlayerController : MonoBehaviour
+namespace Player
 {
-    private StateMachine<PlayerState> m_machine;
-
-    private void Awake()
+    [RequireComponent(typeof(Walkable))]
+    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(CharacterAnimationView))]
+    public class PlayerController : MonoBehaviour
     {
-        PlayerContext data = new PlayerContext();
-        m_machine = new StateMachine<PlayerState>();
+        public StateMachine<PlayerState> stateMachine => m_machine;
 
-        m_machine.AddState(new PlayableState(m_machine, data));
-        
-        //m_machine.AddState(new BotRoamingState(m_machine, data));
-        //m_machine.AddState(new BotChaseState(m_machine, data));
-        //m_machine.AddState(new BotAttackState(m_machine, data, m_attacks));
+        [SerializeField]
+        private Camera m_camera; // TODO: Get used of this SerializeField and 
+                                 // make camera finding with code
 
-        m_machine.ChangeState<PlayableState>();
-    }
+        private StateMachine<PlayerState> m_machine;
 
-    private void Update()
-    {
-        m_machine.StateUpdate();
-    }
-    private void FixedUpdate()
-    {
-        m_machine.FixedStateUpdate();
+        [Button]
+        private void TestStopAnimation() {
+            CharacterAnimationView animationView = GetComponent<CharacterAnimationView>();
+            animationView.StopFromRunning();
+        }
+
+        private void Awake()
+        {
+            PlayerContext data = new PlayerContext(
+                    p_body          : GetComponent<Rigidbody>(),
+                    p_camera        : m_camera,
+                    p_walkControl   : GetComponent<Walkable>(),
+                    p_inputReader   : new InputReader(),
+                    p_animationView : GetComponent<CharacterAnimationView>()
+                    );
+            
+            
+            m_machine = new StateMachine<PlayerState>();
+            m_machine.AddState(new PlayableState(m_machine, data));
+
+            m_machine.ChangeState<PlayableState>();
+        }
+
+        private void Update()
+        {
+            m_machine.StateUpdate();
+        }
+        private void FixedUpdate()
+        {
+            m_machine.FixedStateUpdate();
+        }
     }
 }
