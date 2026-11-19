@@ -1102,7 +1102,7 @@ MonoBehaviour:
     - rid: 1834686208754581584
       type: {class: 'Constant`1[[DialogueSystem.Runtime.SpeakerData, Speam.GraphTools.Runtime]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
-        m_Value: {fileID: 0}
+        m_Value: {fileID: 11400000, guid: 53b4e76642b9c6644b9b8faf52626e9d, type: 2}
     - rid: 1834686208754581585
       type: {class: 'Constant`1[[System.String, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
@@ -1111,7 +1111,7 @@ MonoBehaviour:
     - rid: 1834686208754581586
       type: {class: 'Constant`1[[DialogueSystem.Runtime.SpeakerData, Speam.GraphTools.Runtime]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
-        m_Value: {fileID: 0}
+        m_Value: {fileID: 11400000, guid: 53b4e76642b9c6644b9b8faf52626e9d, type: 2}
     - rid: 1834686208754581587
       type: {class: 'Constant`1[[System.String, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
@@ -1120,7 +1120,7 @@ MonoBehaviour:
     - rid: 1834686208754581588
       type: {class: 'Constant`1[[DialogueSystem.Runtime.SpeakerData, Speam.GraphTools.Runtime]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
-        m_Value: {fileID: 0}
+        m_Value: {fileID: 11400000, guid: 53b4e76642b9c6644b9b8faf52626e9d, type: 2}
     - rid: 1834686208754581589
       type: {class: 'Constant`1[[System.String, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
@@ -1128,7 +1128,7 @@ MonoBehaviour:
     - rid: 1834686208754581590
       type: {class: 'Constant`1[[DialogueSystem.Runtime.SpeakerData, Speam.GraphTools.Runtime]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
-        m_Value: {fileID: 0}
+        m_Value: {fileID: 11400000, guid: 53b4e76642b9c6644b9b8faf52626e9d, type: 2}
     - rid: 1834686208754581591
       type: {class: 'Constant`1[[System.String, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
@@ -1137,7 +1137,7 @@ MonoBehaviour:
     - rid: 1834686208754581592
       type: {class: 'Constant`1[[DialogueSystem.Runtime.SpeakerData, Speam.GraphTools.Runtime]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
-        m_Value: {fileID: 0}
+        m_Value: {fileID: 11400000, guid: 53b4e76642b9c6644b9b8faf52626e9d, type: 2}
     - rid: 1834686208754581593
       type: {class: 'Constant`1[[System.String, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
@@ -1146,7 +1146,7 @@ MonoBehaviour:
     - rid: 1834686208754581594
       type: {class: 'Constant`1[[DialogueSystem.Runtime.SpeakerData, Speam.GraphTools.Runtime]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:
-        m_Value: {fileID: 0}
+        m_Value: {fileID: 11400000, guid: 53b4e76642b9c6644b9b8faf52626e9d, type: 2}
     - rid: 1834686208754581595
       type: {class: 'Constant`1[[System.String, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: UnityEditor.GraphToolkitModule}
       data:

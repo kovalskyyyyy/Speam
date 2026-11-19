@@ -3,13 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace DialogueSystem.Runtime
 {
     /// <summary>
-    /// Проигрывает DialogueAsset и выводит его в UI: текст (с эффектом печати), имя, иконку и варианты выбора.
-    /// Все поля UI необязательны: пустые просто пропускаются.
+    /// Проигрывает DialogueAsset в виде ленты (как в Disco Elysium):
+    /// реплики добавляются в ScrollRect, имя говорящего пишется цветом перед текстом,
+    /// портрет один общий и меняется при смене говорящего.
     /// </summary>
     public class DialogueRunner : MonoBehaviour
     {
@@ -17,24 +19,29 @@ namespace DialogueSystem.Runtime
         public DialogueAsset dialogue;
 
         [Header("UI")]
-        [Tooltip("Корневая панель диалога. Включается при старте диалога и выключается в конце.")]
+        [Tooltip("Корневая панель диалога. Включается при старте и выключается в конце.")]
         [SerializeField] GameObject dialoguePanel;
-        [Tooltip("Сюда выводится текст реплики.")]
-        [SerializeField] TMP_Text dialogueText;
-        [Tooltip("Необязательно: имя говорящего.")]
-        [SerializeField] TMP_Text speakerNameText;
-        [Tooltip("Сюда выводится sprite1 говорящего.")]
+        [SerializeField] ScrollRect scrollRect;
+        [Tooltip("Content внутри ScrollRect (VerticalLayoutGroup + ContentSizeFitter).")]
+        [SerializeField] RectTransform content;
+        [Tooltip("Префаб реплики: один TMP_Text на корне.")]
+        [SerializeField] TMP_Text linePrefab;
+        [Tooltip("Префаб кнопки: Button + дочерний TMP_Text. Для вариантов и для «Дальше».")]
+        [SerializeField] Button choicePrefab;
+        [Tooltip("Необязательно: общий портрет говорящего (вне ленты).")]
         [SerializeField] Image speakerIcon;
-        [Tooltip("Тексты вариантов выбора. Если TMP лежит внутри Button, клик по кнопке выберет вариант.")]
-        [SerializeField] List<TMP_Text> choiceTexts = new List<TMP_Text>();
-
-        [Header("Input")]
-        [Tooltip("Необязательно: кнопка «дальше» (например, невидимая кнопка на весь экран). Либо вызывайте Advance() из своего кода.")]
-        [SerializeField] Button advanceButton;
+        [SerializeField] string continueText = "Дальше";
 
         [Header("Settings")]
-        [Tooltip("Скорость печати, если у говорящего не задан textSpeed (символов в секунду).")]
-        [SerializeField] float defaultTextSpeed = 30f;
+        [Tooltip("Время сглаживания скролла, сек. Больше = плавнее и медленнее.")]
+        [SerializeField] float scrollSmoothTime = 0.25f;
+        [Tooltip("Прозрачность старых реплик (1 = не затемнять).")]
+        [SerializeField, Range(0f, 1f)] float oldLineAlpha = 0.5f;
+        [Tooltip("Добавлять выбранный вариант в ленту как реплику игрока.")]
+        [SerializeField] bool echoChoice = true;
+        [Tooltip("Имя игрока в ленте. Пусто = без имени.")]
+        [SerializeField] string playerName = "";
+        [SerializeField] Color playerColor = Color.white;
 
         public event Action Started;
         public event Action<SpeakerData, string> LineShown;
@@ -46,13 +53,13 @@ namespace DialogueSystem.Runtime
         /// <summary>Единственный раннер на сцене. NPC обращаются к нему через DialogueRunner.Instance.</summary>
         public static DialogueRunner Instance { get; private set; }
 
-        
-        private int current = -1;
-        private bool waitingForAdvance;
-        private Coroutine typingRoutine;
-        private Coroutine actionRoutine;
-        private readonly List<ChoiceOption> visibleOptions = new List<ChoiceOption>();
-        private readonly List<GameObject> choiceRoots = new List<GameObject>();
+        int current = -1;
+        bool waitingForAdvance;
+        Coroutine actionRoutine;
+        Coroutine scrollRoutine;
+        TMP_Text lastLine;
+        readonly List<ChoiceOption> visibleOptions = new List<ChoiceOption>();
+        readonly List<GameObject> transient = new List<GameObject>();   // кнопки выбора / «Дальше»
 
         void OnDestroy()
         {
@@ -69,32 +76,10 @@ namespace DialogueSystem.Runtime
             }
             Instance = this;
 
-            // Для каждого текста варианта находим кнопку выше по иерархии и вешаем на неё выбор.
-            for (int i = 0; i < choiceTexts.Count; i++)
-            {
-                var label = choiceTexts[i];
-                if (label == null) { choiceRoots.Add(null); continue; }
-
-                var button = label.GetComponentInParent<Button>();
-                if (button != null)
-                {
-                    int index = i;
-                    button.onClick.AddListener(() => Choose(index));
-                    choiceRoots.Add(button.gameObject);
-                }
-                else
-                {
-                    Debug.LogWarning($"У варианта выбора «{label.name}» нет родительской Button: клик по нему ничего не выберет.", label);
-                    choiceRoots.Add(label.gameObject);
-                }
-            }
-
-            if (advanceButton != null)
-                advanceButton.onClick.AddListener(Advance);
-
-            HideChoices();
             if (dialoguePanel != null) dialoguePanel.SetActive(false);
         }
+
+        // ---------- Запуск ----------
 
         public void StartDialogue() => StartDialogue(dialogue);
 
@@ -107,33 +92,33 @@ namespace DialogueSystem.Runtime
                 Debug.LogWarning("Диалог пуст или не подключён.");
                 return;
             }
+            if (content == null || linePrefab == null || choicePrefab == null)
+            {
+                Debug.LogError("DialogueRunner: не заданы content / linePrefab / choicePrefab.", this);
+                return;
+            }
 
             dialogue = asset;
             IsRunning = true;
             current = asset.startIndex;
 
+            ClearLog();
+            if (speakerIcon != null) speakerIcon.enabled = false;
             if (dialoguePanel != null) dialoguePanel.SetActive(true);
+
             Started?.Invoke();
             Process();
         }
 
-        /// <summary>
-        /// Кнопка «дальше». Если текст ещё печатается, показывает его целиком,
-        /// иначе переходит к следующей ноде.
-        /// </summary>
+        // ---------- Управление ----------
+
+        /// <summary>Переход к следующей ноде (кнопка «Дальше»).</summary>
         public void Advance()
         {
-            if (!IsRunning) return;
-
-            if (typingRoutine != null)
-            {
-                CompleteTyping();
-                return;
-            }
-
-            if (!waitingForAdvance) return;
+            if (!IsRunning || !waitingForAdvance) return;
 
             waitingForAdvance = false;
+            ClearTransient();
             current = dialogue.nodes[current].next;
             Process();
         }
@@ -143,9 +128,14 @@ namespace DialogueSystem.Runtime
         {
             if (!IsRunning || visibleIndex < 0 || visibleIndex >= visibleOptions.Count) return;
 
-            current = visibleOptions[visibleIndex].nextIndex;
+            var option = visibleOptions[visibleIndex];
+            ClearTransient();
+
+            if (echoChoice)
+                AddEntry(playerName, playerColor, option.text);
+
             visibleOptions.Clear();
-            HideChoices();
+            current = option.nextIndex;
             Process();
         }
 
@@ -159,28 +149,127 @@ namespace DialogueSystem.Runtime
 
             switch (dialogue.nodes[current])
             {
-                case LineNodeData line:
-                    ShowLine(line);
-                    break;
-
-                case ChoiceNodeData choice:
-                    ShowChoices(choice);
-                    break;
-                case ActionNodeData action: 
-                    RunAction(action);
-                    break;
-
-                default:   // EndNodeData и всё неизвестное
-                    Finish();
-                    break;
+                case LineNodeData line:     ShowLine(line);      break;
+                case ChoiceNodeData choice: ShowChoices(choice); break;
+                case ActionNodeData action: RunAction(action);   break;
+                default:                    Finish();            break;   // EndNodeData и всё неизвестное
             }
         }
-        // ------Реализация Событий-----
+
+        // ---------- Лента ----------
+
+        /// <summary>Добавляет запись в ленту. Имя (если есть) пишется цветом перед текстом.</summary>
+        TMP_Text AddEntry(string speakerName, Color nameColor, string text)
+        {
+            DimLastLine();
+
+            var tmp = Instantiate(linePrefab, content);
+            string body = text ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(speakerName))
+            {
+                tmp.text = body;
+            }
+            else
+            {
+                string hex = ColorUtility.ToHtmlStringRGB(nameColor);
+                tmp.text = $"<b><color=#{hex}>{speakerName}</color></b>  {body}";
+            }
+
+            lastLine = tmp;
+            return tmp;
+        }
+
+        void DimLastLine()
+        {
+            if (lastLine != null) lastLine.alpha = oldLineAlpha;
+        }
+
+        void ClearLog()
+        {
+            ClearTransient();
+            lastLine = null;
+            for (int i = content.childCount - 1; i >= 0; i--)
+                Destroy(content.GetChild(i).gameObject);
+        }
+
+        void SpawnButton(string label, UnityAction onClick)
+        {
+            var button = Instantiate(choicePrefab, content);
+            var tmp = button.GetComponentInChildren<TMP_Text>();
+            if (tmp != null) tmp.text = label;
+            button.onClick.AddListener(onClick);
+            transient.Add(button.gameObject);
+        }
+
+        void ClearTransient()
+        {
+            foreach (var go in transient)
+            {
+                if (go == null) continue;
+                go.SetActive(false);   // сразу убираем из лэйаута, Destroy сработает только в конце кадра
+                Destroy(go);
+            }
+            transient.Clear();
+        }
+
+        void ScrollDown()
+        {
+            if (scrollRoutine != null) StopCoroutine(scrollRoutine);
+            scrollRoutine = StartCoroutine(ScrollDownRoutine());
+        }
+
+        IEnumerator ScrollDownRoutine()
+        {
+            // Позиция сейчас та же, что была до добавления записи. Ждём, пока Layout посчитает новую высоту.
+            yield return null;
+
+            if (scrollRect == null) { scrollRoutine = null; yield break; }
+
+            var viewport = scrollRect.viewport != null
+                ? scrollRect.viewport
+                : (RectTransform)scrollRect.transform;
+
+            scrollRect.StopMovement();
+
+            float velocity = 0f;
+            float lastSetY = content.anchoredPosition.y;
+            int settledFrames = 0;
+
+            while (settledFrames < 2)
+            {
+                // Позицию изменили не мы (колесо, перетаскивание, инерция): игрок взял управление.
+                if (Mathf.Abs(content.anchoredPosition.y - lastSetY) > 0.5f)
+                {
+                    scrollRoutine = null;
+                    yield break;
+                }
+
+                float target = Mathf.Max(0f, content.rect.height - viewport.rect.height);
+                float y = scrollSmoothTime <= 0f
+                    ? target
+                    : Mathf.SmoothDamp(content.anchoredPosition.y, target, ref velocity,
+                        scrollSmoothTime, Mathf.Infinity, Time.unscaledDeltaTime);
+
+                var pos = content.anchoredPosition;
+                pos.y = y;
+                content.anchoredPosition = pos;
+                lastSetY = y;
+
+                settledFrames = Mathf.Abs(y - target) < 0.5f ? settledFrames + 1 : 0;
+                yield return null;
+            }
+
+            scrollRoutine = null;
+        }
+
+        // ---------- Действия ----------
+
         void RunAction(ActionNodeData node)
         {
-            waitingForAdvance = false;   // клик «дальше» во время действия ничего не делает
-            HideChoices();
-            StopAction();                // на случай, если прошлая корутина ещё жива
+            waitingForAdvance = false;
+            ClearTransient();
+            StopAction();
             actionRoutine = StartCoroutine(ActionRoutine(node));
         }
 
@@ -190,7 +279,6 @@ namespace DialogueSystem.Runtime
                 yield return node.action.Execute();   // ждём, пока действие закончится
 
             actionRoutine = null;
-
             if (!IsRunning) yield break;              // диалог могли прервать, пока действие шло
 
             current = node.next;
@@ -205,18 +293,17 @@ namespace DialogueSystem.Runtime
                 actionRoutine = null;
             }
         }
+
         // ---------- Реплика ----------
-        
+
         void ShowLine(LineNodeData line)
         {
-            HideChoices();
-            waitingForAdvance = true;
+            ClearTransient();
+            waitingForAdvance = false;
 
             var speaker = line.speaker;
 
-            if (speakerNameText != null)
-                speakerNameText.text = speaker != null ? speaker.displayName : string.Empty;
-
+            // общий портрет
             if (speakerIcon != null)
             {
                 var sprite = speaker != null ? speaker.sprite1 : null;
@@ -224,55 +311,32 @@ namespace DialogueSystem.Runtime
                 speakerIcon.enabled = sprite != null;
             }
 
-            if (dialogueText != null)
-            {
-                float speed = speaker != null && speaker.textSpeed > 0f ? speaker.textSpeed : defaultTextSpeed;
-                StopTyping();
-                typingRoutine = StartCoroutine(Typewrite(line.text ?? string.Empty, speed));
-            }
+            AddEntry(
+                speaker != null ? speaker.displayName : string.Empty,
+                speaker != null ? speaker.nameColor : Color.white,
+                line.text);
 
             LineShown?.Invoke(speaker, line.text);
-        }
 
-        IEnumerator Typewrite(string text, float charsPerSecond)
-        {
-            dialogueText.text = text;
-            dialogueText.maxVisibleCharacters = 0;
-            dialogueText.ForceMeshUpdate();
-
-            int total = dialogueText.textInfo.characterCount;
-            float shown = 0f;
-
-            while (shown < total)
+            // Текст показан целиком: если дальше выбор, показываем его сразу, иначе кнопка «Дальше».
+            int next = line.next;
+            if (next >= 0 && next < dialogue.nodes.Count && dialogue.nodes[next] is ChoiceNodeData)
             {
-                shown += charsPerSecond * Time.unscaledDeltaTime;
-                dialogueText.maxVisibleCharacters = Mathf.Min(total, (int)shown);
-                yield return null;
+                current = next;
+                Process();
+                return;
             }
 
-            dialogueText.maxVisibleCharacters = int.MaxValue;
-            typingRoutine = null;
-        }
-
-        void CompleteTyping()
-        {
-            StopTyping();
-            if (dialogueText != null) dialogueText.maxVisibleCharacters = int.MaxValue;
-        }
-
-        void StopTyping()
-        {
-            if (typingRoutine != null)
-            {
-                StopCoroutine(typingRoutine);
-                typingRoutine = null;
-            }
+            waitingForAdvance = true;
+            SpawnButton(continueText, Advance);
+            ScrollDown();
         }
 
         // ---------- Выбор ----------
 
         void ShowChoices(ChoiceNodeData choice)
         {
+            ClearTransient();
             visibleOptions.Clear();
 
             foreach (var option in choice.options)
@@ -289,44 +353,29 @@ namespace DialogueSystem.Runtime
                 return;
             }
 
-            if (visibleOptions.Count > choiceTexts.Count)
-            {
-                Debug.LogWarning($"Доступно вариантов: {visibleOptions.Count}, а TMP-слотов только {choiceTexts.Count}. Лишние не показаны.");
-                visibleOptions.RemoveRange(choiceTexts.Count, visibleOptions.Count - choiceTexts.Count);
-            }
-
             var texts = new List<string>();
-            for (int i = 0; i < choiceTexts.Count; i++)
+            for (int i = 0; i < visibleOptions.Count; i++)
             {
-                bool used = i < visibleOptions.Count;
-                if (choiceRoots[i] != null) choiceRoots[i].SetActive(used);
-                if (used)
-                {
-                    if (choiceTexts[i] != null) choiceTexts[i].text = visibleOptions[i].text;
-                    texts.Add(visibleOptions[i].text);
-                }
+                int index = i;   // копия для замыкания
+                SpawnButton($"{i + 1}. {visibleOptions[i].text}", () => Choose(index));
+                texts.Add(visibleOptions[i].text);
             }
 
+            ScrollDown();
             ChoicesShown?.Invoke(texts);
-        }
-
-        void HideChoices()
-        {
-            foreach (var root in choiceRoots)
-                if (root != null) root.SetActive(false);
         }
 
         // ---------- Завершение ----------
 
         void Finish()
         {
-            StopTyping();
             StopAction();
+            if (scrollRoutine != null) { StopCoroutine(scrollRoutine); scrollRoutine = null; }
             IsRunning = false;
             waitingForAdvance = false;
             current = -1;
             visibleOptions.Clear();
-            HideChoices();
+            ClearTransient();
             if (dialoguePanel != null) dialoguePanel.SetActive(false);
             Ended?.Invoke();
         }
