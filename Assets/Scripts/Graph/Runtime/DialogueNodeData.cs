@@ -33,5 +33,11 @@ namespace DialogueSystem.Runtime
     }
 
     [Serializable]
+    public class ActionNodeData : DialogueNodeData
+    {
+        public ActionForNodes action;
+    }
+
+    [Serializable]
     public class EndNodeData : DialogueNodeData { }
 }

@@ -46,11 +46,13 @@ namespace DialogueSystem.Runtime
         /// <summary>Единственный раннер на сцене. NPC обращаются к нему через DialogueRunner.Instance.</summary>
         public static DialogueRunner Instance { get; private set; }
 
-        int current = -1;
-        bool waitingForAdvance;
-        Coroutine typingRoutine;
-        readonly List<ChoiceOption> visibleOptions = new List<ChoiceOption>();
-        readonly List<GameObject> choiceRoots = new List<GameObject>();
+        
+        private int current = -1;
+        private bool waitingForAdvance;
+        private Coroutine typingRoutine;
+        private Coroutine actionRoutine;
+        private readonly List<ChoiceOption> visibleOptions = new List<ChoiceOption>();
+        private readonly List<GameObject> choiceRoots = new List<GameObject>();
 
         void OnDestroy()
         {
@@ -164,15 +166,47 @@ namespace DialogueSystem.Runtime
                 case ChoiceNodeData choice:
                     ShowChoices(choice);
                     break;
+                case ActionNodeData action: 
+                    RunAction(action);
+                    break;
 
                 default:   // EndNodeData и всё неизвестное
                     Finish();
                     break;
             }
         }
+        // ------Реализация Событий-----
+        void RunAction(ActionNodeData node)
+        {
+            waitingForAdvance = false;   // клик «дальше» во время действия ничего не делает
+            HideChoices();
+            StopAction();                // на случай, если прошлая корутина ещё жива
+            actionRoutine = StartCoroutine(ActionRoutine(node));
+        }
 
+        IEnumerator ActionRoutine(ActionNodeData node)
+        {
+            if (node.action != null)
+                yield return node.action.Execute();   // ждём, пока действие закончится
+
+            actionRoutine = null;
+
+            if (!IsRunning) yield break;              // диалог могли прервать, пока действие шло
+
+            current = node.next;
+            Process();
+        }
+
+        void StopAction()
+        {
+            if (actionRoutine != null)
+            {
+                StopCoroutine(actionRoutine);
+                actionRoutine = null;
+            }
+        }
         // ---------- Реплика ----------
-
+        
         void ShowLine(LineNodeData line)
         {
             HideChoices();
@@ -287,6 +321,7 @@ namespace DialogueSystem.Runtime
         void Finish()
         {
             StopTyping();
+            StopAction();
             IsRunning = false;
             waitingForAdvance = false;
             current = -1;

@@ -109,6 +109,12 @@ namespace DialogueSystem.Editor
                         });
                     }
                     return data;
+                
+                case ActionSegmentNode actionNode:
+                    return new ActionNodeData
+                    {
+                    action = GetInputPortValue<ActionForNodes>(actionNode.GetInputPortByName(ActionSegmentNode.IN_ACTION)),
+                    };
 
                 case EndNode _:
                     return new EndNodeData();
