@@ -10,6 +10,7 @@ namespace Animations
   public static class AnimHash 
   {
     public static readonly int Speed = Animator.StringToHash("Speed");
+    public static readonly int StopFromRunning = Animator.StringToHash("StopFromRunning");
   }
 
 }
