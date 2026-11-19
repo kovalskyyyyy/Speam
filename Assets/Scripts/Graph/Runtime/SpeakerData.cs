@@ -6,6 +6,7 @@ namespace DialogueSystem.Runtime
     public class SpeakerData : ScriptableObject
     {
         public string displayName;
+        public Color nameColor = Color.white;
         public Sprite sprite1;
         [Tooltip("Скорость печати текста, символов в секунду.")]
         public float textSpeed = 30f;
