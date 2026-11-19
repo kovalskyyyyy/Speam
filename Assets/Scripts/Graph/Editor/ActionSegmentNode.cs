@@ -1,6 +1,5 @@
 using System;
 using DialogueSystem.Runtime;
-using Unity.GraphToolkit.Editor;
 
 namespace DialogueSystem.Editor
 {
