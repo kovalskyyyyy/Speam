@@ -11,6 +11,8 @@ namespace Animations
   {
     public static readonly int Speed = Animator.StringToHash("Speed");
     public static readonly int StopFromRunning = Animator.StringToHash("StopFromRunning");
+    public static readonly int TurningRight = Animator.StringToHash("TurningRight");
+    public static readonly int TurningLeft = Animator.StringToHash("TurningLeft");
   }
 
 }

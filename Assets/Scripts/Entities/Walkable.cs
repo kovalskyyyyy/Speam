@@ -167,6 +167,7 @@ namespace Entities
             m_rb.MoveRotation(Quaternion.RotateTowards(
                 m_rb.rotation, targetRotation, turnSpeed * Time.fixedDeltaTime)
             );
+
         }
 
         private bool IsFacing(Vector3 to) {
