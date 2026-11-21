@@ -1,22 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 using DialogueSystem.Runtime;
+using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 namespace Saves
 {
+    /// <summary>
+    /// Хранит и применяет сохранения. Загрузкой сцен занимается GameManager,
+    /// поэтому здесь только чтение/запись/применение данных.
+    /// </summary>
     public class SaveManager : MonoBehaviour
     {
         public static SaveManager Instance { get; private set; }
 
         [SerializeField] DialogueDatabase dialogueDb;
 
-        [Tooltip("Префабы НПС, которые спавнятся кодом (у каждого свой prefabId).")] [SerializeField]
-        List<NpcSaveable> npcPrefabs = new();
-
-        SaveData pendingLoad; // применим после загрузки сцены
+        [Tooltip("Префабы НПС, которые спавнятся кодом (у каждого свой prefabId).")]
+        [SerializeField] List<NpcSaveable> npcPrefabs = new();
 
         string PathFor(int slot) => Path.Combine(Application.persistentDataPath, $"save_{slot}.json");
 
@@ -30,16 +33,11 @@ namespace Saves
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         void OnDestroy()
         {
-            if (Instance == this)
-            {
-                Instance = null;
-                SceneManager.sceneLoaded -= OnSceneLoaded;
-            }
+            if (Instance == this) Instance = null;
         }
 
         static Transform FindPlayer()
@@ -90,47 +88,59 @@ namespace Saves
 
         public bool HasSave(int slot = 0) => File.Exists(PathFor(slot));
 
-        public void Load(int slot = 0)
+        /// <summary>Читает сейв. Возвращает null, если файла нет или он повреждён.</summary>
+        public SaveData Read(int slot = 0)
         {
-            if (!HasSave(slot))
-            {
-                Debug.LogWarning("Сейва нет.");
-                return;
-            }
+            if (!HasSave(slot)) return null;
 
             try
             {
-                pendingLoad = JsonUtility.FromJson<SaveData>(File.ReadAllText(PathFor(slot)));
+                var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(PathFor(slot)));
+                if (data == null)
+                {
+                    Debug.LogError("Сейв пустой или повреждён.");
+                    return null;
+                }
+                return data;
             }
             catch (Exception e)
             {
                 Debug.LogError($"Сейв повреждён: {e}");
-                return;
+                return null;
             }
-
-            // Грузим сцену, а данные применяем в sceneLoaded (когда объекты новой сцены уже созданы).
-            SceneManager.LoadScene(pendingLoad.sceneName);
         }
 
-        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        /// <summary>Применяет сейв к уже загруженной сцене.</summary>
+        public void Apply(SaveData data)
         {
-            if (pendingLoad == null) return;
-            Apply(pendingLoad);
-            pendingLoad = null;
-        }
+            if (data == null) return;
 
-        void Apply(SaveData data)
-        {
             // 1. Глобальное состояние
             GameState.Clear();
-            foreach (var d in data.completedDialogues) GameState.CompletedDialogues.Add(d);
-            foreach (var a in data.doneActions) GameState.DoneActions.Add(a);
-            foreach (var f in data.flags) GameState.Flags.Add(f);
-            foreach (var q in data.quests) GameState.Quests[q.questId] = q;
+
+            if (data.completedDialogues != null)
+                foreach (var d in data.completedDialogues) GameState.CompletedDialogues.Add(d);
+
+            if (data.doneActions != null)
+                foreach (var a in data.doneActions) GameState.DoneActions.Add(a);
+
+            if (data.flags != null)
+                foreach (var f in data.flags) GameState.Flags.Add(f);
+
+            if (data.quests != null)
+                foreach (var q in data.quests)
+                    if (q != null && !string.IsNullOrEmpty(q.questId))
+                        GameState.Quests[q.questId] = q;
 
             // 2. Игрок
             var player = FindPlayer();
-            if (player != null) player.position = data.playerPosition;
+            if (player != null)
+            {
+                player.position = data.playerPosition;
+
+                var agent = player.GetComponentInChildren<NavMeshAgent>();
+                if (agent != null) agent.Warp(data.playerPosition);
+            }
 
             // 3. НПС, которые уже стоят на сцене
             var existing = new Dictionary<string, NpcSaveable>();
@@ -140,24 +150,29 @@ namespace Saves
 
             var restored = new HashSet<string>();
 
-            foreach (var state in data.npcs)
+            if (data.npcs != null)
             {
-                if (!existing.TryGetValue(state.id, out var npc))
+                foreach (var state in data.npcs)
                 {
-                    // На сцене такого нет — спавним из префаба
-                    var prefab = npcPrefabs.Find(p => p != null && p.prefabId == state.prefabId);
-                    if (prefab == null)
+                    if (state == null) continue;
+
+                    if (!existing.TryGetValue(state.id, out var npc))
                     {
-                        Debug.LogWarning($"Нет префаба для НПС '{state.id}' (prefabId '{state.prefabId}')");
-                        continue;
+                        // На сцене такого нет — спавним из префаба
+                        var prefab = npcPrefabs.Find(p => p != null && p.prefabId == state.prefabId);
+                        if (prefab == null)
+                        {
+                            Debug.LogWarning($"Нет префаба для НПС '{state.id}' (prefabId '{state.prefabId}')");
+                            continue;
+                        }
+
+                        npc = Instantiate(prefab, state.position, state.rotation);
+                        npc.id = state.id;
                     }
 
-                    npc = Instantiate(prefab, state.position, state.rotation);
-                    npc.id = state.id;
+                    npc.Restore(state, dialogueDb);
+                    restored.Add(state.id);
                 }
-
-                npc.Restore(state, dialogueDb);
-                restored.Add(state.id);
             }
 
             // 4. Есть на сцене, но нет в сейве => этого НПС убрали/убили до сохранения

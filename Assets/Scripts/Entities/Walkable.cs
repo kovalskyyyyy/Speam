@@ -71,7 +71,8 @@ namespace Entities
 
 
         private void LateUpdate() {
-            animationView.SetSpeed(velocity.magnitude / maxSpeed);
+            if (animationView != null)
+                animationView.SetSpeed(velocity.magnitude / maxSpeed);
         }
 
         private Vector3 FlatVelocity

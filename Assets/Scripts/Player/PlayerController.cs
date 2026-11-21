@@ -6,7 +6,6 @@ using CustomDebug;
 
 using UnityEngine;
 using Entities;
-using Unity.VisualScripting;
 
 namespace Player
 {
@@ -17,12 +16,16 @@ namespace Player
     {
         public StateMachine<PlayerState> stateMachine => m_machine;
 
-        //TODO: Убрать SerializeField и находить камеру кодом GAME-XXX
         [SerializeField]
         private Camera m_camera;
 
+        [Tooltip("Ассет Input Reader. Если не задан, создаётся временный экземпляр в рантайме.")]
+        [SerializeField]
+        private InputReader m_inputReader;
+
         private StateMachine<PlayerState> m_machine;
         private DialogueRunner m_runner;
+        private bool m_ownsInputReader;
 
         [Button]
         private void TestStopAnimation() {
@@ -32,17 +35,26 @@ namespace Player
 
         private void Awake()
         {
+            if (m_camera == null) m_camera = Camera.main;
+
+            if (m_inputReader == null)
+            {
+                // ScriptableObject нельзя создавать через new.
+                m_inputReader = ScriptableObject.CreateInstance<InputReader>();
+                m_ownsInputReader = true;
+            }
+
             PlayerContext data = new PlayerContext(
                     p_body          : GetComponent<Rigidbody>(),
                     p_camera        : m_camera,
                     p_walkControl   : GetComponent<Walkable>(),
-                    p_inputReader   : new InputReader(),
+                    p_inputReader   : m_inputReader,
                     p_animationView : GetComponent<CharacterAnimationView>()
                     );
-            
-            
+
             m_machine = new StateMachine<PlayerState>();
             m_machine.AddState(new PlayableState(m_machine, data));
+            m_machine.AddState(new DialogueState(m_machine, data));
 
             m_machine.ChangeState<PlayableState>();
         }
@@ -51,11 +63,7 @@ namespace Player
         private void Start()
         {
             m_runner = DialogueRunner.Instance;
-            if (m_runner == null)
-            {
-                Debug.LogWarning("DialogueRunner не найден на сцене.", this);
-                return;
-            }
+            if (m_runner == null) return;
 
             m_runner.Started += OnStartedHandler;
             m_runner.Ended += OnEndedHandler;
@@ -63,13 +71,14 @@ namespace Player
 
         private void OnDestroy()
         {
-            if (m_runner == null)
+            if (m_runner != null)
             {
-                return;
+                m_runner.Started -= OnStartedHandler;
+                m_runner.Ended -= OnEndedHandler;
             }
 
-            m_runner.Started -= OnStartedHandler;
-            m_runner.Ended -= OnEndedHandler;
+            if (m_ownsInputReader && m_inputReader != null)
+                Destroy(m_inputReader);
         }
 
         private void Update()

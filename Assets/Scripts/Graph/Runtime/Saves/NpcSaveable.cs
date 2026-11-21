@@ -70,8 +70,10 @@ namespace Saves
 
         public void Restore(NpcState s, DialogueDatabase db)
         {
+            if (s == null) return;
+
             transform.SetPositionAndRotation(s.position, s.rotation);
-            currentDialogue = db.Get(s.dialogueId);
+            currentDialogue = db != null ? db.Get(s.dialogueId) : null;
 
             // Если есть NavMeshAgent — позицию надо ставить через Warp:
             // if (TryGetComponent<UnityEngine.AI.NavMeshAgent>(out var agent)) agent.Warp(s.position);

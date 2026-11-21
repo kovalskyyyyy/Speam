@@ -1,4 +1,5 @@
 using StateMachine;
+using Speam.Core;
 using UnityEngine;
 
 using UnityEngine.InputSystem;
@@ -14,8 +15,6 @@ namespace Player.States
         {
             m_data.walkControl.animationView = m_data.animationView; // I don't like this referencing
             m_data.inputReader.onPoint += UpdateMouseCancellation;
-
-            Debug.Log(m_data.body);
         }
 
         public override void Exit() 
@@ -27,16 +26,14 @@ namespace Player.States
         
         public override void FixedStateUpdate()
         {
-            // Vector3 velocity = m_data.walkControl.velocity;
-            // velocity.y = 0f;
-            // Vector3 velocityNormilized = velocity/3.6f;
-            // float speedNormalized = Vector3.Dot(velocityNormilized, m_data.body.transform.forward);
-            //
-            // m_data.animationView.SetSpeed(speedNormalized);
-            //
-            
+            // Пока открыто меню/пауза или идёт загрузка, игрок не двигается.
+            if (GameManager.Instance != null && !GameManager.Instance.CanPlayerAct) return;
+
             if (!m_wasMouseCancelled)
-                GoToMousePos(Mouse.current.position.ReadValue());
+            {
+                var mouse = Mouse.current;
+                if (mouse != null) GoToMousePos(mouse.position.ReadValue());
+            }
         }
 
         private bool m_wasMouseCancelled = true;
@@ -54,7 +51,6 @@ namespace Player.States
 
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                Debug.Log("[PlayableState] Got the ray hit on " + hit.point);
                 m_data.walkControl.GoToPoint(hit.point);
             }
         }

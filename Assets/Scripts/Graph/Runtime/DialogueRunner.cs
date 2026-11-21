@@ -371,6 +371,23 @@ namespace DialogueSystem.Runtime
 
         // ---------- Завершение ----------
 
+        /// <summary>Прерывает диалог без отметки о прохождении. Нужно при смене сцены.</summary>
+        public void Abort()
+        {
+            if (!IsRunning) return;
+
+            StopAction();
+            if (scrollRoutine != null) { StopCoroutine(scrollRoutine); scrollRoutine = null; }
+
+            IsRunning = false;
+            waitingForAdvance = false;
+            current = -1;
+            visibleOptions.Clear();
+            ClearTransient();
+
+            if (dialoguePanel != null) dialoguePanel.SetActive(false);
+        }
+
         void Finish()
         {
             StopAction();
