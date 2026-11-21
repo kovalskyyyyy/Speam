@@ -35,17 +35,34 @@ namespace Player.States
             // m_data.animationView.SetSpeed(speedNormalized);
             //
             
-            if (!m_wasMouseCancelled)
-                GoToMousePos(Mouse.current.position.ReadValue());
+            if (!m_wasMouseCancelled && !m_startedOverUI)
+            {
+                if (!m_data.inputReader.IsPointerOverUI())
+                    GoToMousePos(m_data.inputReader.MousePosition);
+            }
         }
 
         private bool m_wasMouseCancelled = true;
+        private bool m_startedOverUI = false;
 
         private void UpdateMouseCancellation(InputAction.CallbackContext context) {
             if (context.performed)
+            {
+                if (m_data.inputReader.IsPointerOverUI())
+                {
+                    m_startedOverUI = true;
+                    m_wasMouseCancelled = true;
+                    return;
+                }
+
+                m_startedOverUI = false;
                 m_wasMouseCancelled = false;
+            }
             else if (context.canceled)
+            {
                 m_wasMouseCancelled = true;
+                m_startedOverUI = false;
+            }
         }
         
         private void GoToMousePos(Vector2 mousePos)
