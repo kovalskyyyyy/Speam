@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using Saves;
 
 namespace DialogueSystem.Runtime
 {
@@ -276,7 +277,10 @@ namespace DialogueSystem.Runtime
         IEnumerator ActionRoutine(ActionNodeData node)
         {
             if (node.action != null)
-                yield return node.action.Execute();   // ждём, пока действие закончится
+            {
+                yield return node.action.Execute(); // ждём, пока действие закончится
+                GameState.MarkActionDone(node.action.Id);
+            }
 
             actionRoutine = null;
             if (!IsRunning) yield break;              // диалог могли прервать, пока действие шло
@@ -377,6 +381,7 @@ namespace DialogueSystem.Runtime
             visibleOptions.Clear();
             ClearTransient();
             if (dialoguePanel != null) dialoguePanel.SetActive(false);
+            if (dialogue != null) GameState.MarkDialogueDone(dialogue.id);
             Ended?.Invoke();
         }
     }
