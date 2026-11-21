@@ -21,6 +21,7 @@ namespace Entities
         [SerializeField] private float maxMoveAngle = 15f;
         [SerializeField] private float brakeForce = 20;
         [SerializeField] private float stopSpeed = 0.1f;
+        [SerializeField] private float turnSlowAngle = 90f;
 
         public bool GoToPoint(Vector3 point)
         {
@@ -54,6 +55,7 @@ namespace Entities
         private bool m_braking = false;
         private bool m_moving = false;
         private int m_index = 0;
+        private bool m_pivoting = false;
 
         private Vector3[] m_corners;
 
@@ -92,7 +94,7 @@ namespace Entities
 
             if (m_index >= m_corners.Length) {
                 m_moving = false;
-                return; 
+                return;
             }
 
             Vector3 to = m_corners[m_index] - m_rb.position;
@@ -106,20 +108,29 @@ namespace Entities
 
             if (to.magnitude < arriveDistance) {
                 m_index++;
-                return; 
-            }
-
-            RotateTowards(to);
-
-            if (!IsFacing(to))
-            {
                 return;
             }
 
-            if (flatVel.magnitude < maxSpeed)
-            {
-                m_rb.AddForce(to.normalized * moveForce, ForceMode.Acceleration);
-            }
+            RotateTowards(to);
+            Steer(to, flatVel);
+        }
+
+        private void Steer(Vector3 to, Vector3 flatVel) {
+            Vector3 desiredVel = to.normalized * (maxSpeed * GetFacingFactor(to));
+            Vector3 dv = desiredVel - flatVel;
+
+            float accel = Vector3.Dot(dv, flatVel) < 0f ? brakeForce : moveForce;
+
+            Vector3 acceleration = Vector3.ClampMagnitude(dv / Time.fixedDeltaTime, accel);
+            m_rb.AddForce(acceleration, ForceMode.Acceleration);
+        }
+
+        private float GetFacingFactor(Vector3 to) {
+            Vector3 forward = m_rb.rotation * Vector3.forward;
+            forward.y = 0;
+
+            float angle = Vector3.Angle(forward, to);
+            return Mathf.InverseLerp(turnSlowAngle, maxMoveAngle, angle);
         }
 
         /// <summary> 
@@ -144,7 +155,7 @@ namespace Entities
             if (!m_braking)
             {
                 m_braking = true;
-                // animationView.StopFromRunning();
+                // animationView.StopFromRunning(); // TODO: Add braking animation
             }
 
             m_rb.AddForce(-flatVel.normalized * brakeForce, ForceMode.Acceleration);
