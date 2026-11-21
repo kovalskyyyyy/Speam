@@ -10,19 +10,19 @@ namespace Inventory
         [SerializeField] private Text m_quantityText;
         [SerializeField] private Button m_button;
 
-        public ItemType CurrentItem { get; private set; } = ItemType.None;
-        public bool IsOccupied => CurrentItem != ItemType.None;
+        public ItemData CurrentItem { get; private set; }
+        public bool IsOccupied => CurrentItem != null;
         public Button Button => m_button;
 
-        public void SetItem(ItemType type, Sprite icon)
+        public void SetItem(ItemData item)
         {
-            CurrentItem = type;
+            CurrentItem = item;
 
-            if (icon != null)
+            if (item != null && item.Icon != null)
             {
                 if (m_iconImage != null)
                 {
-                    m_iconImage.sprite = icon;
+                    m_iconImage.sprite = item.Icon;
                     m_iconImage.gameObject.SetActive(true);
                 }
                 if (m_quantityText != null)
@@ -30,7 +30,7 @@ namespace Inventory
                     m_quantityText.gameObject.SetActive(false);
                 }
             }
-            else
+            else if (item != null)
             {
                 // Fallback for testing before sprites are assigned: show item name
                 if (m_iconImage != null)
@@ -39,15 +39,19 @@ namespace Inventory
                 }
                 if (m_quantityText != null)
                 {
-                    m_quantityText.text = type.ToString();
+                    m_quantityText.text = item.ItemName;
                     m_quantityText.gameObject.SetActive(true);
                 }
+            }
+            else
+            {
+                Clear();
             }
         }
 
         public void Clear()
         {
-            CurrentItem = ItemType.None;
+            CurrentItem = null;
 
             if (m_iconImage != null)
             {

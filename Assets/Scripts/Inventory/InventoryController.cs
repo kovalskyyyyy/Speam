@@ -8,34 +8,12 @@ using CustomDebug;
 
 namespace Inventory
 {
-    public enum ItemType
-    {
-        None = 0,
-        Key,
-        OldNote,
-        Flashlight,
-        Crowbar,
-        Photo,
-        Matches,
-        Lighter,
-        Diary,
-        Screwdriver,
-        RustyKey
-    }
-
-    [Serializable]
-    public struct ItemVisual
-    {
-        public ItemType type;
-        public Sprite icon;
-    }
-
     public class InventoryController : MonoBehaviour
     {
         public static InventoryController Instance { get; private set; }
 
-        public event Action<ItemType> OnItemAdded;
-        public event Action<ItemType> OnItemRemoved;
+        public event Action<ItemData> OnItemAdded;
+        public event Action<ItemData> OnItemRemoved;
 
         [Header("UI Panels & Controls")]
         [SerializeField] private GameObject m_inventoryPanel;
@@ -52,64 +30,21 @@ namespace Inventory
         [SerializeField] private float m_slideDuration = 0.25f;
 
         [Header("Items")]
-        [SerializeField] private List<ItemType> m_startingItems = new();
-        [SerializeField] private List<ItemVisual> m_itemVisuals = new();
+        [SerializeField] private List<ItemData> m_startingItems = new();
+        [SerializeField] private ItemData m_testItem;
 
-        public bool IsOpen => m_isOpen;
-        public IReadOnlyList<ItemType> Items => m_items;
-        public int Count => m_items.Count;
-        public int Capacity => m_slotCapacity;
-
-        public bool HasItem(ItemType item) => item != ItemType.None && m_items.Contains(item);
-
-        public bool AddItem(ItemType item)
-        {
-            if (item == ItemType.None) return false;
-            if (HasItem(item)) return false;
-            if (m_items.Count >= m_slotCapacity) return false;
-
-            m_items.Add(item);
-            UpdateUI();
-            OnItemAdded?.Invoke(item);
-            return true;
-        }
-
-        public bool RemoveItem(ItemType item)
-        {
-            if (!m_items.Remove(item)) return false;
-
-            UpdateUI();
-            OnItemRemoved?.Invoke(item);
-            return true;
-        }
-
-        public void Toggle()
-        {
-            if (m_isOpen) Close();
-            else Open();
-        }
-
-        public void Open()
-        {
-            m_isOpen = true;
-            UpdateTabVisuals();
-            SlideTo(m_openPos);
-        }
-
-        public void Close()
-        {
-            m_isOpen = false;
-            UpdateTabVisuals();
-            SlideTo(m_closedPos);
-        }
-
-        private readonly List<ItemType> m_items = new();
+        private readonly List<ItemData> m_items = new();
         private InventorySlotUI[] m_slots;
         private RectTransform m_panelRect;
         private Coroutine m_slideCoroutine;
         private Vector2 m_openPos;
         private Vector2 m_closedPos;
         private bool m_isOpen;
+
+        public bool IsOpen => m_isOpen;
+        public IReadOnlyList<ItemData> Items => m_items;
+        public int Count => m_items.Count;
+        public int Capacity => m_slotCapacity;
 
         private void Awake()
         {
@@ -126,7 +61,7 @@ namespace Inventory
 
         private void EnsureEventSystem()
         {
-            if (FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject es = new GameObject("EventSystem");
                 es.AddComponent<UnityEngine.EventSystems.EventSystem>();
@@ -192,6 +127,58 @@ namespace Inventory
             UpdateUI();
         }
 
+        public bool HasItem(ItemData item) => item != null && m_items.Contains(item);
+
+        public bool HasItem(string itemId) =>
+            m_items.Exists(i => i != null && (i.Id == itemId || i.name == itemId));
+
+        public bool AddItem(ItemData item)
+        {
+            if (item == null) return false;
+            if (HasItem(item)) return false;
+            if (m_items.Count >= m_slotCapacity) return false;
+
+            m_items.Add(item);
+            UpdateUI();
+            OnItemAdded?.Invoke(item);
+            return true;
+        }
+
+        public bool RemoveItem(ItemData item)
+        {
+            if (item == null) return false;
+            if (!m_items.Remove(item)) return false;
+
+            UpdateUI();
+            OnItemRemoved?.Invoke(item);
+            return true;
+        }
+
+        public bool RemoveItem(string itemId)
+        {
+            ItemData item = m_items.Find(i => i != null && (i.Id == itemId || i.name == itemId));
+            return item != null && RemoveItem(item);
+        }
+
+        public void Toggle()
+        {
+            if (m_isOpen) Close();
+            else Open();
+        }
+
+        public void Open()
+        {
+            m_isOpen = true;
+            UpdateTabVisuals();
+            SlideTo(m_openPos);
+        }
+
+        public void Close()
+        {
+            m_isOpen = false;
+            UpdateTabVisuals();
+            SlideTo(m_closedPos);
+        }
 
         private void UpdateTabVisuals()
         {
@@ -237,8 +224,7 @@ namespace Inventory
             {
                 if (i < m_items.Count)
                 {
-                    ItemType type = m_items[i];
-                    m_slots[i].SetItem(type, GetItemIcon(type));
+                    m_slots[i].SetItem(m_items[i]);
                 }
                 else
                 {
@@ -247,28 +233,23 @@ namespace Inventory
             }
         }
 
-        private Sprite GetItemIcon(ItemType type)
-        {
-            for (int i = 0; i < m_itemVisuals.Count; i++)
-            {
-                if (m_itemVisuals[i].type == type)
-                    return m_itemVisuals[i].icon;
-            }
-            return null;
-        }
-
         #if UNITY_EDITOR
         [Button]
         private void TestToggle() => Toggle();
 
         [Button]
-        private void TestAddKey() => AddItem(ItemType.Key);
+        private void TestAddItem()
+        {
+            ItemData itemToUse = m_testItem != null ? m_testItem : (m_startingItems.Count > 0 ? m_startingItems[0] : null);
+            if (itemToUse != null) AddItem(itemToUse);
+        }
 
         [Button]
-        private void TestAddNote() => AddItem(ItemType.OldNote);
-
-        [Button]
-        private void TestRemoveKey() => RemoveItem(ItemType.Key);
+        private void TestRemoveItem()
+        {
+            ItemData itemToUse = m_testItem != null ? m_testItem : (m_items.Count > 0 ? m_items[0] : null);
+            if (itemToUse != null) RemoveItem(itemToUse);
+        }
         #endif
     }
 }
