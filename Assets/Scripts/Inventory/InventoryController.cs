@@ -21,7 +21,6 @@ namespace Inventory
         [SerializeField] private Button m_closeButton;
         [SerializeField] private Button m_toggleButton;
         [SerializeField] private Text m_toggleTabText;
-        [SerializeField] private Text m_titleText;
 
         [Header("Settings")]
         [SerializeField] private int m_slotCapacity = 10;

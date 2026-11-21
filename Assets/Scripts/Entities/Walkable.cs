@@ -55,7 +55,6 @@ namespace Entities
         private bool m_braking = false;
         private bool m_moving = false;
         private int m_index = 0;
-        private bool m_pivoting = false;
 
         private Vector3[] m_corners;
 
