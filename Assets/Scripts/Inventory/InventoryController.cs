@@ -28,6 +28,7 @@ namespace Inventory
         [SerializeField] private bool m_startOpen = false;
         [SerializeField] private bool m_toggleWithKey = true;
         [SerializeField] private float m_slideDuration = 0.25f;
+        [SerializeField] private bool m_dockLeft = true;
 
         [Header("Items")]
         [SerializeField] private List<ItemData> m_startingItems = new();
@@ -61,7 +62,7 @@ namespace Inventory
 
         private void EnsureEventSystem()
         {
-            if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            if (FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject es = new GameObject("EventSystem");
                 es.AddComponent<UnityEngine.EventSystems.EventSystem>();
@@ -110,7 +111,7 @@ namespace Inventory
             {
                 float width = m_panelRect.rect.width > 0 ? m_panelRect.rect.width : 230f;
                 m_openPos = Vector2.zero;
-                m_closedPos = new Vector2(width, 0f);
+                m_closedPos = new Vector2(m_dockLeft ? -width : width, 0f);
 
                 m_isOpen = m_startOpen;
                 m_panelRect.anchoredPosition = m_isOpen ? m_openPos : m_closedPos;
@@ -184,7 +185,10 @@ namespace Inventory
         {
             if (m_toggleTabText != null)
             {
-                m_toggleTabText.text = m_isOpen ? "▶" : "◀";
+                if (m_dockLeft)
+                    m_toggleTabText.text = m_isOpen ? "◀" : "▶";
+                else
+                    m_toggleTabText.text = m_isOpen ? "▶" : "◀";
             }
         }
 
