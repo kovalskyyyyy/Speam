@@ -237,12 +237,12 @@ namespace Speam.Core
             var prefab = Resources.Load<GameObject>("UI/MainMenu");
             if (prefab != null)
             {
-                Instantiate(prefab, transform);
+                Instantiate(prefab);
                 return;
             }
 
             // Fallback: create basic (same as original code)
-            new GameObject("[MainMenuUI]").AddComponent<MainMenuController>();
+            //new GameObject("[MainMenuUI]").AddComponent<MainMenuController>();
         }
 
         void EnsureGameplayHud()
@@ -253,12 +253,12 @@ namespace Speam.Core
             var prefab = Resources.Load<GameObject>("UI/GameplayHUD");
             if (prefab != null)
             {
-                Instantiate(prefab, transform);
+                Instantiate(prefab);
                 return;
             }
 
             // Fallback: create basic
-            new GameObject("[GameplayHUD]").AddComponent<GameplayHud>();
+            //new GameObject("[GameplayHUD]").AddComponent<GameplayHud>();
         }
 
         static void AbortDialogue()

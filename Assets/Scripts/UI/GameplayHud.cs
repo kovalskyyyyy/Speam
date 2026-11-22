@@ -2,6 +2,7 @@ using Saves;
 using Speam.Core;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Speam.UI
@@ -12,6 +13,9 @@ namespace Speam.UI
         // Designer assigns these in the Prefab Inspector
         [SerializeField] private Text m_hintText;
         [SerializeField] private GameObject m_pausePanel;
+        [SerializeField] private Button m_resumeButton;
+        [SerializeField] private Button m_saveButton;
+        [SerializeField] private Button m_mainMenuButton;
         [SerializeField] private Text m_toastText;
         [SerializeField] private float m_toastDuration = 2f;
 
@@ -25,10 +29,54 @@ namespace Speam.UI
             {
                 m_hintText.text = "Esc — пауза    F5 — сохранить";
             }
+
+            // Set up pause panel button actions once
+            if (m_resumeButton != null)
+            {
+                m_resumeButton.onClick.AddListener(() =>
+                {
+                    HidePause();
+                });
+            }
+
+            if (m_saveButton != null)
+            {
+                m_saveButton.onClick.AddListener(() =>
+                {
+                    SaveGame();
+                });
+            }
+
+            if (m_mainMenuButton != null)
+            {
+                m_mainMenuButton.onClick.AddListener(() =>
+                {
+                    GoToMainMenu();
+                });
+            }
+        }
+
+        private void Update()
+        {
+            // Handle Escape key to toggle pause
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
+
+            if (keyboard.escapeKey.wasPressedThisFrame)
+            {
+                if (GameManager.Instance != null && GameManager.Instance.State == GameFlowState.Paused)
+                {
+                    HidePause();
+                }
+                else if (GameManager.Instance != null && GameManager.Instance.State == GameFlowState.Gameplay)
+                {
+                    ShowPause();
+                }
+            }
         }
 
         /// <summary>
-        /// Show the pause panel.
+        /// Show the pause panel and pause the game.
         /// </summary>
         public void ShowPause()
         {
@@ -36,10 +84,15 @@ namespace Speam.UI
             {
                 m_pausePanel.SetActive(true);
             }
+            // Pause the game via GameManager
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SetPaused(true);
+            }
         }
 
         /// <summary>
-        /// Hide the pause panel.
+        /// Hide the pause panel and resume the game.
         /// </summary>
         public void HidePause()
         {
@@ -47,6 +100,35 @@ namespace Speam.UI
             {
                 m_pausePanel.SetActive(false);
             }
+            // Resume the game via GameManager
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SetPaused(false);
+            }
+        }
+
+        /// <summary>
+        /// Save the current game.
+        /// </summary>
+        public void SaveGame()
+        {
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SaveGame(0);
+            }
+        }
+
+        /// <summary>
+        /// Go to main menu.
+        /// </summary>
+        public void GoToMainMenu()
+        {
+            // Resume game first if paused
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SetPaused(false);
+            }
+            GameManager.Instance.GoToMainMenu();
         }
 
         /// <summary>

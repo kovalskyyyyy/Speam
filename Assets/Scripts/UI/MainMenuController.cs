@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Speam.UI
 {
-    /// <summary>Меню, которое создаётся через префаб.</summary>
+    /// <summary>Меню главного экрана, создаётся через prefab.</summary>
     public class MainMenuController : MonoBehaviour
     {
         // Designer assigns these in the Prefab Inspector
@@ -17,9 +17,18 @@ namespace Speam.UI
         private void Awake()
         {
             // Set up button actions once when prefab is instantiated
-            m_newGameButton.onClick.AddListener(() => GameManager.Instance.StartNewGame());
-            m_continueButton.onClick.AddListener(() => GameManager.Instance.ContinueGame(0));
-            m_quitButton.onClick.AddListener(() => GameManager.Instance.Quit());
+            if (m_newGameButton != null)
+            {
+                m_newGameButton.onClick.AddListener(() => GameManager.Instance.StartNewGame());
+            }
+            if (m_continueButton != null)
+            {
+                m_continueButton.onClick.AddListener(() => GameManager.Instance.ContinueGame(0));
+            }
+            if (m_quitButton != null)
+            {
+                m_quitButton.onClick.AddListener(() => GameManager.Instance.Quit());
+            }
         }
 
         /// <summary>
