@@ -1,3 +1,4 @@
+using System;
 using Saves;
 using Speam.Core;
 using System.Collections;
@@ -13,6 +14,7 @@ namespace Speam.UI
         // Designer assigns these in the Prefab Inspector
         [SerializeField] private Text m_hintText;
         [SerializeField] private GameObject m_pausePanel;
+        [SerializeField] private Text m_saveInfoText;
         [SerializeField] private Button m_resumeButton;
         [SerializeField] private Button m_saveButton;
         [SerializeField] private Button m_mainMenuButton;
@@ -84,6 +86,8 @@ namespace Speam.UI
             {
                 m_pausePanel.SetActive(true);
             }
+            // Update save info text in pause menu
+            UpdatePauseSaveInfo();
             // Pause the game via GameManager
             if (GameManager.Instance != null)
             {
@@ -108,6 +112,30 @@ namespace Speam.UI
         }
 
         /// <summary>
+        /// Update save info text in the pause menu with last save timestamp.
+        /// </summary>
+        private void UpdatePauseSaveInfo()
+        {
+            if (m_saveInfoText == null) return;
+
+            if (SaveManager.Instance == null || !SaveManager.Instance.HasSave(0))
+            {
+                m_saveInfoText.text = "Сохранений пока нет";
+                return;
+            }
+
+            var saveData = SaveManager.Instance.Read(0);
+            if (saveData != null && !string.IsNullOrEmpty(saveData.savedAt))
+            {
+                m_saveInfoText.text = $"Сохранение: {saveData.savedAt}";
+            }
+            else
+            {
+                m_saveInfoText.text = "Сохранение найдено";
+            }
+        }
+
+        /// <summary>
         /// Save the current game.
         /// </summary>
         public void SaveGame()
@@ -115,6 +143,7 @@ namespace Speam.UI
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.SaveGame(0);
+                ShowToast($"Сохранение {DateTime.Now:HH:mm}");
             }
         }
 

@@ -1,3 +1,4 @@
+using System;
 using Saves;
 using Speam.Core;
 using UnityEngine;
@@ -29,24 +30,34 @@ namespace Speam.UI
             {
                 m_quitButton.onClick.AddListener(() => GameManager.Instance.Quit());
             }
+
+            // Read last save info to display last saved timestamp
+            UpdateSaveInfo();
         }
 
         /// <summary>
-        /// Call from outside to update save info text.
+        /// Update save info text with last save timestamp.
+        /// Reads from SaveManager if available, otherwise shows no-save state.
         /// </summary>
-        public void UpdateSaveInfo(bool hasSave, string savedAt = "")
+        public void UpdateSaveInfo()
         {
             if (m_saveInfoText == null) return;
 
-            if (!hasSave)
+            if (SaveManager.Instance == null || !SaveManager.Instance.HasSave(0))
             {
                 m_saveInfoText.text = "Сохранений пока нет";
                 return;
             }
 
-            m_saveInfoText.text = !string.IsNullOrEmpty(savedAt)
-                ? $"Сохранение: {savedAt}"
-                : "Сохранение найдено";
+            var saveData = SaveManager.Instance.Read(0);
+            if (saveData != null && !string.IsNullOrEmpty(saveData.savedAt))
+            {
+                m_saveInfoText.text = $"Сохранение: {saveData.savedAt}";
+            }
+            else
+            {
+                m_saveInfoText.text = "Сохранение найдено";
+            }
         }
     }
 }
