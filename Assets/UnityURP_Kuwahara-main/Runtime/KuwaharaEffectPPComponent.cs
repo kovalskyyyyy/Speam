@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace KuwaharaURP {
-    [Serializable, VolumeComponentMenuForRenderPipeline("Custom/Kuwahara", typeof(UniversalRenderPipeline))]
+    [Serializable, VolumeComponentMenu("Custom/Kuwahara"), SupportedOnRenderPipeline(typeof(UniversalRenderPipelineAsset))]
     public sealed class KuwaharaEffectPPComponent : VolumeComponent, IPostProcessComponent {
        public bool IsActive() => active;
 

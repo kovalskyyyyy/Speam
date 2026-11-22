@@ -1,11 +1,13 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+#if UNITY_6000_0_OR_NEWER
+using UnityEngine.Rendering.RenderGraphModule;
+#endif
 
 namespace KuwaharaURP {
     [System.Serializable]
     public sealed class KuwaharaEffectPass : ScriptableRenderPass {
-       RenderTargetIdentifier _source;
        RenderTargetIdentifier _destinationA;
        RenderTargetIdentifier _destinationB;
        RenderTargetIdentifier _latestDest;
@@ -23,19 +25,28 @@ namespace KuwaharaURP {
 
        Material           _effectMaterial;
        KuwaharaEffectType _effectType;
-       bool               _baseAllocated;
-       bool               _anisotropicAllocated;
 
        public KuwaharaEffectPass() {
           renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
        }
 
-       [System.Obsolete]
-       public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
-          _baseAllocated = false;
-          _anisotropicAllocated = false;
+#if UNITY_6000_0_OR_NEWER
+       private class PassData {
+          public TextureHandle source;
+          public RenderTextureDescriptor descriptor;
+          public bool isOverlay;
+          public KuwaharaEffectPass pass;
+       }
 
-          if ( renderingData.cameraData.isSceneViewCamera ) {
+       // Новый метод специально для Unity 6 (Render Graph)
+       public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData) {
+          var cameraData = frameData.Get<UniversalCameraData>();
+          if ( cameraData.isSceneViewCamera ) {
+             return;
+          }
+
+          var resourceData = frameData.Get<UniversalResourceData>();
+          if ( resourceData.isActiveTargetBackBuffer ) {
              return;
           }
 
@@ -45,41 +56,36 @@ namespace KuwaharaURP {
              return;
           }
 
-          bool isOverlay = renderingData.cameraData.renderType == CameraRenderType.Overlay;
-          // Если это камера персонажей (Overlay) и галочка ApplyToOverlay выключена — пропускаем
+          bool isOverlay = cameraData.renderType == CameraRenderType.Overlay;
           if ( isOverlay && !customEffect.ApplyToOverlay.value ) {
              return;
           }
 
-          RenderTextureDescriptor descriptor = renderingData.cameraData.cameraTargetDescriptor;
-          descriptor.depthBufferBits = 0;
+          using ( var builder = renderGraph.AddUnsafePass<PassData>("Kuwahara Effect", out var passData) ) {
+             passData.source = resourceData.activeColorTexture;
+             passData.descriptor = cameraData.cameraTargetDescriptor;
+             passData.isOverlay = isOverlay;
+             passData.pass = this;
 
-          var renderer = renderingData.cameraData.renderer;
-          _source = renderer.cameraColorTargetHandle;
+             builder.UseTexture(passData.source, AccessFlags.ReadWrite);
+             builder.AllowPassCulling(false);
 
-          cmd.GetTemporaryRT(temporaryRTIdA, descriptor, FilterMode.Bilinear);
-          _destinationA = new RenderTargetIdentifier(temporaryRTIdA);
-          cmd.GetTemporaryRT(temporaryRTIdB, descriptor, FilterMode.Bilinear);
-          _destinationB = new RenderTargetIdentifier(temporaryRTIdB);
-          _baseAllocated = true;
+             builder.SetRenderFunc((PassData data, UnsafeGraphContext context) => {
+                var currentStack = VolumeManager.instance.stack;
+                var effect = currentStack.GetComponent<KuwaharaEffectPPComponent>();
+                if ( effect == null ) return;
 
-          if ( customEffect.EffectType.value == KuwaharaEffectType.Anisotropic ) {
-             cmd.GetTemporaryRT(_stensorID, descriptor, FilterMode.Bilinear);
-             _structureTensor = new RenderTargetIdentifier(_stensorID);
-
-             cmd.GetTemporaryRT(_eigenvectors1ID, descriptor, FilterMode.Bilinear);
-             _eigenvectors1 = new RenderTargetIdentifier(_eigenvectors1ID);
-
-             cmd.GetTemporaryRT(_eigenvectors2ID, descriptor, FilterMode.Bilinear);
-             _eigenvectors2 = new RenderTargetIdentifier(_eigenvectors2ID);
-
-             _anisotropicAllocated = true;
+                CommandBuffer cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
+                data.pass.RenderKuwahara(cmd, data.source, data.descriptor, effect, data.isOverlay);
+             });
           }
        }
+#endif
 
+#if URP_COMPATIBILITY_MODE || !UNITY_6000_0_OR_NEWER
        [System.Obsolete]
        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
-          if ( !_baseAllocated || renderingData.cameraData.isSceneViewCamera ) {
+          if ( renderingData.cameraData.isSceneViewCamera ) {
              return;
           }
 
@@ -97,6 +103,36 @@ namespace KuwaharaURP {
           CommandBuffer cmd = CommandBufferPool.Get("Custom Post Processing");
           cmd.Clear();
 
+          var source = renderingData.cameraData.renderer.cameraColorTargetHandle;
+          var descriptor = renderingData.cameraData.cameraTargetDescriptor;
+
+          RenderKuwahara(cmd, source, descriptor, customEffect, isOverlay);
+
+          context.ExecuteCommandBuffer(cmd);
+          CommandBufferPool.Release(cmd);
+       }
+#endif
+
+       void RenderKuwahara(CommandBuffer cmd, RenderTargetIdentifier source, RenderTextureDescriptor descriptor, KuwaharaEffectPPComponent customEffect, bool isOverlay) {
+          descriptor.depthBufferBits = 0;
+
+          cmd.GetTemporaryRT(temporaryRTIdA, descriptor, FilterMode.Bilinear);
+          _destinationA = new RenderTargetIdentifier(temporaryRTIdA);
+          cmd.GetTemporaryRT(temporaryRTIdB, descriptor, FilterMode.Bilinear);
+          _destinationB = new RenderTargetIdentifier(temporaryRTIdB);
+
+          bool isAnisotropic = customEffect.EffectType.value == KuwaharaEffectType.Anisotropic;
+          if ( isAnisotropic ) {
+             cmd.GetTemporaryRT(_stensorID, descriptor, FilterMode.Bilinear);
+             _structureTensor = new RenderTargetIdentifier(_stensorID);
+
+             cmd.GetTemporaryRT(_eigenvectors1ID, descriptor, FilterMode.Bilinear);
+             _eigenvectors1 = new RenderTargetIdentifier(_eigenvectors1ID);
+
+             cmd.GetTemporaryRT(_eigenvectors2ID, descriptor, FilterMode.Bilinear);
+             _eigenvectors2 = new RenderTargetIdentifier(_eigenvectors2ID);
+          }
+
           #region Local Methods
           void BlitTo(Material mat, int pass = 0) {
              var first = _latestDest;
@@ -106,16 +142,15 @@ namespace KuwaharaURP {
              _latestDest = last;
           }
 
-          void RenderPasses(int passCount) {
-             for ( int i = 0; i < passCount; ++i ) {
+          void RenderPasses(int count) {
+             for ( int i = 0; i < count; ++i ) {
                 BlitTo(_effectMaterial);
              }
           }
           #endregion
 
-          _latestDest = _source;
+          _latestDest = source;
 
-          // Выбираем ползунки: для Base камеры — основные, для Overlay камеры (персонажей) — новые
           int passCount  = isOverlay ? customEffect.OverlayPasses.value     : customEffect.Passes.value;
           int kernelSize = isOverlay ? customEffect.OverlayKernelSize.value : customEffect.KernelSize.value;
           float alpha    = isOverlay ? customEffect.OverlayAlpha.value      : customEffect.Alpha.value;
@@ -136,15 +171,14 @@ namespace KuwaharaURP {
                 break;
 
              case KuwaharaEffectType.Anisotropic:
-                if ( !_anisotropicAllocated ) break;
                 SetupAnisotropic(customEffect);
                 _effectMaterial.SetInt("_KernelSize", kernelSize);
                 _effectMaterial.SetFloat("_Alpha", alpha);
                 _effectMaterial.SetFloat("_Zeta", zeta);
 
-                cmd.Blit(_source, _structureTensor, _effectMaterial, 0);
+                cmd.Blit(source, _structureTensor, _effectMaterial, 0);
                 cmd.Blit(_structureTensor, _eigenvectors1, _effectMaterial, 1);
-                cmd.Blit(_structureTensor, _eigenvectors2, _effectMaterial, 2);
+                cmd.Blit(_eigenvectors1, _eigenvectors2, _effectMaterial, 2);
                 cmd.SetGlobalTexture("_TFM", _eigenvectors2);
                 for ( int i = 0; i < passCount; ++i ) {
                    BlitTo(_effectMaterial, 3);
@@ -152,10 +186,15 @@ namespace KuwaharaURP {
                 break;
           }
 
-          cmd.Blit(_latestDest, _source);
+          cmd.Blit(_latestDest, source);
 
-          context.ExecuteCommandBuffer(cmd);
-          CommandBufferPool.Release(cmd);
+          cmd.ReleaseTemporaryRT(temporaryRTIdA);
+          cmd.ReleaseTemporaryRT(temporaryRTIdB);
+          if ( isAnisotropic ) {
+             cmd.ReleaseTemporaryRT(_stensorID);
+             cmd.ReleaseTemporaryRT(_eigenvectors1ID);
+             cmd.ReleaseTemporaryRT(_eigenvectors2ID);
+          }
        }
 
        void SetupBasic(KuwaharaEffectPPComponent ppComponent) {
@@ -206,21 +245,6 @@ namespace KuwaharaURP {
           _effectMaterial.SetFloat("_ZeroCrossing", ppComponent.ZeroCrossing.value);
           _effectMaterial.SetFloat("_Alpha", ppComponent.Alpha.value);
           _effectMaterial.SetFloat("_Zeta", ppComponent.UseZeta.value ? ppComponent.Zeta.value : 2.0f / (ppComponent.KernelSize.value / 2.0f));
-       }
-
-       public override void OnCameraCleanup(CommandBuffer cmd) {
-          if ( _baseAllocated ) {
-             cmd.ReleaseTemporaryRT(temporaryRTIdA);
-             cmd.ReleaseTemporaryRT(temporaryRTIdB);
-             _baseAllocated = false;
-          }
-
-          if ( _anisotropicAllocated ) {
-             cmd.ReleaseTemporaryRT(_stensorID);
-             cmd.ReleaseTemporaryRT(_eigenvectors1ID);
-             cmd.ReleaseTemporaryRT(_eigenvectors2ID);
-             _anisotropicAllocated = false;
-          }
        }
 
        public void DeInit() {
