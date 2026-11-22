@@ -28,6 +28,9 @@ namespace Entities
 
         public bool GoToPoint(Vector3 point)
         {
+            if (m_moving && Vector3.Distance(point, m_targetPoint) < 0.1f)
+                return true;
+
             if (!NavMesh.SamplePosition(point, out NavMeshHit hit, maxDistanceSuggest , NavMesh.AllAreas))
                 return false;
 
@@ -39,10 +42,13 @@ namespace Entities
                 return false;
             }
             
+            m_targetPoint = point;
             m_corners = m_path.corners;
             m_index = 1;
             m_braking = false;
             m_moving = true;
+            m_pivoting = false;
+            animationView?.ResetTurnTriggers();
             return true;
         }
 
@@ -55,6 +61,7 @@ namespace Entities
         private NavMeshPath m_path;
         private Rigidbody m_rb;
 
+        private Vector3 m_targetPoint;
         private bool m_braking = false;
         private bool m_moving = false;
         private int m_index = 0;
@@ -129,6 +136,7 @@ namespace Entities
             if (m_pivoting) {
                 if (IsFacing(to)) {
                     m_pivoting = false;
+                    animationView?.ResetTurnTriggers();
                     return false;
                 }
                 RotateTowards(to, pivotTurnSpeed);
@@ -193,6 +201,7 @@ namespace Entities
                 m_rb.linearVelocity = new Vector3(0f, m_rb.linearVelocity.y, 0f);
                 m_braking = false;
                 m_moving = false;
+                m_pivoting = false;
                 return true;
             }
 
