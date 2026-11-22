@@ -43,6 +43,7 @@ namespace Entities
             m_index = 1;
             m_braking = false;
             m_moving = true;
+            m_pivoting = false;
             return true;
         }
 
@@ -193,6 +194,7 @@ namespace Entities
                 m_rb.linearVelocity = new Vector3(0f, m_rb.linearVelocity.y, 0f);
                 m_braking = false;
                 m_moving = false;
+                m_pivoting = false;
                 return true;
             }
 
