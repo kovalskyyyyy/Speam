@@ -32,7 +32,12 @@ namespace Saves
             }
 
             Instance = this;
+            
             DontDestroyOnLoad(gameObject);
+            if (dialogueDb == null)
+            {
+                dialogueDb = Resources.Load<DialogueDatabase>("DialogueDatabase");
+            }
         }
 
         void OnDestroy()
