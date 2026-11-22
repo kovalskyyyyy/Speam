@@ -1,8 +1,15 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Locations/City Base/Demo City By Versatile Studio/Models/Materials/No Name.mat.meta
 guid: 7a89bcb0d459f0b4cbe590b8e34fde0a
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 2100000
+========
+guid: c4899b26800e8e946b3f28d5f1e577e4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+>>>>>>>> CharacterWalking:Assets/Chars/CharAnim/Walk/Transitions/Left Turn.anim.meta
   userData: 
   assetBundleName: 
   assetBundleVariant: 

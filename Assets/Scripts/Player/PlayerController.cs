@@ -24,11 +24,25 @@ namespace Player
         private StateMachine<PlayerState> m_machine;
         private DialogueRunner m_runner;
 
+        // BEGIN DEBUG BUTTONS {
         [Button]
         private void TestStopAnimation() {
             CharacterAnimationView animationView = GetComponent<CharacterAnimationView>();
             animationView.StopFromRunning();
         }
+
+        [Button]
+        private void TestTurnLeftAnimation() {
+            CharacterAnimationView animationView = GetComponent<CharacterAnimationView>();
+            animationView.TurnLeft();
+        }
+
+        [Button]
+        private void TestTurnRightAnimation() {
+            CharacterAnimationView animationView = GetComponent<CharacterAnimationView>();
+            animationView.TurnRight();
+        }
+        // END DEBUG BUTTONS }
 
         private void Awake()
         {
