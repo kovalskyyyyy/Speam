@@ -67,15 +67,13 @@ public class ClickInteractor : MonoBehaviour
 
         if (delta.magnitude <= target.InteractDistance)
         {
-            agent.ResetPath();
-            //m_data.walkControl.GoToPoint(hit.point)
             var t = target;
             target = null;
             t.Interact();
         }
         else
         {
-            agent.SetDestination(target.transform.position);
+            agent.GoToPoint(target.transform.position);
         }
     }
 

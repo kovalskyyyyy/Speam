@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using DialogueSystem.Runtime;
 using UnityEngine;
 
 public class ThoughtInteractable : Interactable
@@ -19,6 +18,12 @@ public class ThoughtInteractable : Interactable
             Debug.LogWarning("ThoughtInteractable: список мыслей пуст.", this);
             return;
         }
+
+        /*if (ThoughtPresenter.Instance == null)
+        {
+            Debug.LogWarning("ThoughtInteractable: ThoughtPresenter не найден на сцене.", this);
+            return;
+        }*/
 
         int index = Random.Range(0, thoughts.Count);
 

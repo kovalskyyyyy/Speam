@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace DialogueSystem.Runtime
 {
+    /// <summary>
+    /// Вешается на NPC. Запускает диалог, когда игрок кликнул по NPC и дошёл до него.
+    /// </summary>
     public class DialogueTrigger : Interactable
     {
         [SerializeField] DialogueAsset dialogue;
@@ -17,6 +20,7 @@ namespace DialogueSystem.Runtime
 
         public override void Interact()
         {
+            // Приоритет: диалог из сейва, затем из инспектора
             var asset = (npcSaveable != null && npcSaveable.currentDialogue != null)
                 ? npcSaveable.currentDialogue
                 : dialogue;
@@ -24,6 +28,12 @@ namespace DialogueSystem.Runtime
             if (asset == null)
             {
                 Debug.LogWarning("DialogueTrigger: диалог не назначен.", this);
+                return;
+            }
+
+            if (DialogueRunner.Instance == null)
+            {
+                Debug.LogWarning("DialogueTrigger: DialogueRunner не найден на сцене.", this);
                 return;
             }
 

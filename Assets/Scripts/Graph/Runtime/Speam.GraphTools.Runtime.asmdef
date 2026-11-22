@@ -2,6 +2,7 @@
     "name": "Speam.GraphTools.Runtime",
     "rootNamespace": "Speam.GraphTools.Runtime",
     "references": [
+        "Outline",
         "Saves",
         "Unity.TextMeshPro",
         "Unity.InputSystem"

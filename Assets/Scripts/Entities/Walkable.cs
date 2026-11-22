@@ -12,6 +12,8 @@ namespace Entities
 
         public Vector3 velocity => m_rb.linearVelocity;
 
+        public bool IsMoving => m_moving;
+
         [Header("Constraits")]
         [SerializeField] private float moveForce          = 20f; 
         [SerializeField] private float maxSpeed           = 4f; 
@@ -44,6 +46,20 @@ namespace Entities
             m_braking = false;
             m_moving = true;
             return true;
+        }
+
+        /// <summary>Плавно остановить персонажа с торможением (используя тот же TryBrake).</summary>
+        public void Stop()
+        {
+            // Уже стоим, ничего делать не нужно
+            if (!m_moving && FlatVelocity.sqrMagnitude < stopSpeed * stopSpeed) return;
+
+            // Фиктивный путь из одной точки: она последняя, поэтому FixedUpdate сразу уйдёт в TryBrake
+            m_corners = new[] { m_rb.position };
+            m_index = 0;
+            m_braking = true;
+            m_moving = true;
+            m_pivoting = false;
         }
 
         public void GoToEntity()
