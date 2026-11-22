@@ -43,7 +43,7 @@ namespace Player
             
             m_machine = new StateMachine<PlayerState>();
             m_machine.AddState(new PlayableState(m_machine, data));
-
+            m_machine.AddState(new DialogueState(m_machine, data));
             m_machine.ChangeState<PlayableState>();
         }
 

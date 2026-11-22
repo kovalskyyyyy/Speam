@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using DialogueSystem.Runtime;
 using Unity.GraphToolkit.Editor;
+using UnityEditor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 
 namespace DialogueSystem.Editor
 {
     /// <summary>Превращает граф диалога (.dialogue) в игровой DialogueAsset при каждом сохранении.</summary>
-    [ScriptedImporter(1, DialogueGraph.AssetExtension)]
+    [ScriptedImporter(2, DialogueGraph.AssetExtension)]
     internal class DialogueImporter : ScriptedImporter
     {
         public override void OnImportAsset(AssetImportContext ctx)
@@ -29,6 +30,7 @@ namespace DialogueSystem.Editor
             }
 
             var asset = ScriptableObject.CreateInstance<DialogueAsset>();
+            asset.id = AssetDatabase.AssetPathToGUID(ctx.assetPath);
             Build(start, asset);
 
             ctx.AddObjectToAsset("RuntimeAsset", asset);
