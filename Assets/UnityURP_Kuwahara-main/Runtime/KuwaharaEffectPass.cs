@@ -38,7 +38,6 @@ namespace KuwaharaURP {
           public KuwaharaEffectPass pass;
        }
 
-       // Новый метод специально для Unity 6 (Render Graph)
        public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData) {
           var cameraData = frameData.Get<UniversalCameraData>();
           if ( cameraData.isSceneViewCamera ) {
@@ -200,7 +199,7 @@ namespace KuwaharaURP {
        void SetupBasic(KuwaharaEffectPPComponent ppComponent) {
           if ( _effectType != KuwaharaEffectType.Basic || !_effectMaterial ) {
              if ( _effectMaterial ) {
-                Object.Destroy(_effectMaterial);
+                CoreUtils.Destroy(_effectMaterial);
              }
              _effectMaterial = new Material(Resources.Load<Shader>("Shaders/Kuwahara"));
              _effectType = ppComponent.EffectType.value;
@@ -217,7 +216,7 @@ namespace KuwaharaURP {
        void SetupGeneralized(KuwaharaEffectPPComponent ppComponent) {
           if ( _effectType != KuwaharaEffectType.Generalized || !_effectMaterial ) {
              if ( _effectMaterial ) {
-                Object.Destroy(_effectMaterial);
+                CoreUtils.Destroy(_effectMaterial);
              }
              _effectMaterial = new Material(Resources.Load<Shader>("Shaders/GeneralizedKuwahara"));
              _effectType = ppComponent.EffectType.value;
@@ -233,7 +232,7 @@ namespace KuwaharaURP {
        void SetupAnisotropic(KuwaharaEffectPPComponent ppComponent) {
           if ( _effectType != KuwaharaEffectType.Anisotropic || !_effectMaterial ) {
              if ( _effectMaterial ) {
-                Object.Destroy(_effectMaterial);
+                CoreUtils.Destroy(_effectMaterial);
              }
              _effectMaterial = new Material(Resources.Load<Shader>("Shaders/AnisotropicKuwahara"));
              _effectType = ppComponent.EffectType.value;
@@ -249,7 +248,7 @@ namespace KuwaharaURP {
 
        public void DeInit() {
           if ( _effectMaterial ) {
-             Object.Destroy( _effectMaterial );
+             CoreUtils.Destroy( _effectMaterial );
              _effectMaterial = null;
           }
        }
