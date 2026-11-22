@@ -8,6 +8,23 @@ namespace Animations {
 
       public void SetSpeed(float v) => m_anim.SetFloat(AnimHash.Speed, v, speedDamp, Time.deltaTime);
       public void StopFromRunning() => m_anim.SetTrigger(AnimHash.StopFromRunning);
+      public void TurnRight()
+      {
+          m_anim.ResetTrigger(AnimHash.TurningLeft);
+          m_anim.SetTrigger(AnimHash.TurningRight);
+      }
+
+      public void TurnLeft()
+      {
+          m_anim.ResetTrigger(AnimHash.TurningRight);
+          m_anim.SetTrigger(AnimHash.TurningLeft);
+      }
+
+      public void ResetTurnTriggers()
+      {
+          m_anim.ResetTrigger(AnimHash.TurningLeft);
+          m_anim.ResetTrigger(AnimHash.TurningRight);
+      }
       
       private Animator m_anim;
 
