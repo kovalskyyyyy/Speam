@@ -225,15 +225,39 @@ namespace Speam.Core
             }
         }
 
+        // Reference UI prefabs located in Assets/Resources/UI/
+        // Designer creates: Assets/Resources/UI/MainMenu.prefab and Assets/Resources/UI/GameplayHUD.prefab
+        // No Inspector assignment needed - works automatically via Resources.Load
+
         void EnsureMainMenu()
         {
             if (FindAnyObjectByType<MainMenuController>() != null) return;
+
+            // Try to load from Resources folder
+            var prefab = Resources.Load<GameObject>("UI/MainMenu");
+            if (prefab != null)
+            {
+                Instantiate(prefab, transform);
+                return;
+            }
+
+            // Fallback: create basic (same as original code)
             new GameObject("[MainMenuUI]").AddComponent<MainMenuController>();
         }
 
         void EnsureGameplayHud()
         {
             if (FindAnyObjectByType<GameplayHud>() != null) return;
+
+            // Try to load from Resources folder
+            var prefab = Resources.Load<GameObject>("UI/GameplayHUD");
+            if (prefab != null)
+            {
+                Instantiate(prefab, transform);
+                return;
+            }
+
+            // Fallback: create basic
             new GameObject("[GameplayHUD]").AddComponent<GameplayHud>();
         }
 
