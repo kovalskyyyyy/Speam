@@ -13,15 +13,18 @@ namespace Entities
         public Vector3 velocity => m_rb.linearVelocity;
 
         [Header("Constraits")]
-        [SerializeField] private float moveForce = 20f; 
-        [SerializeField] private float maxSpeed = 4f; 
-        [SerializeField] private float arriveDistance = 0.3f; 
+        [SerializeField] private float moveForce          = 20f; 
+        [SerializeField] private float maxSpeed           = 4f; 
+        [SerializeField] private float arriveDistance     = 0.3f; 
         [SerializeField] private float maxDistanceSuggest = 2f; 
-        [SerializeField] private float turnSpeed = 360f;
-        [SerializeField] private float maxMoveAngle = 15f;
-        [SerializeField] private float brakeForce = 20;
-        [SerializeField] private float stopSpeed = 0.1f;
-        [SerializeField] private float turnSlowAngle = 90f;
+        [SerializeField] private float turnSpeed          = 360f;
+        [SerializeField] private float maxMoveAngle       = 15f;
+        [SerializeField] private float brakeForce         = 20;
+        [SerializeField] private float stopSpeed          = 0.1f;
+        [SerializeField] private float turnSlowAngle      = 90f;
+        [SerializeField] private float pivotAngle         = 30f;
+        [SerializeField] private float pivotMaxSpeed      = 0.5f;
+        [SerializeField] private float pivotTurnSpeed     = 180f;
 
         public bool GoToPoint(Vector3 point)
         {
@@ -111,8 +114,49 @@ namespace Entities
                 return;
             }
 
-            RotateTowards(to);
+            if (HandlePivot(to, flatVel)) {
+                return;
+            }
+
+            RotateTowards(to, turnSpeed);
             Steer(to, flatVel);
+        }
+        
+        /// <summary>
+        /// Returns true while the character is pivoting in place and must not move
+        /// </summary>
+        private bool HandlePivot(Vector3 to, Vector3 flatVel) {
+            if (m_pivoting) {
+                if (IsFacing(to)) {
+                    m_pivoting = false;
+                    return false;
+                }
+                RotateTowards(to, pivotTurnSpeed);
+                return true;
+            }
+
+            // Запускаем поворот только когда персонаж почти остановился
+            if (flatVel.magnitude > pivotMaxSpeed) {
+                return false;
+            }
+
+            Vector3 forward = m_rb.rotation * Vector3.forward;
+            forward.y = 0;
+
+            float signedAngle = Vector3.SignedAngle(forward, to, Vector3.up);
+            if (Mathf.Abs(signedAngle) < pivotAngle) {
+                return false;
+            }
+
+            m_pivoting = true;
+            if (signedAngle > 0f) {
+                animationView.TurnRight();
+            } else {
+                animationView.TurnLeft();
+            }
+
+            RotateTowards(to, pivotTurnSpeed);
+            return true;
         }
 
         private void Steer(Vector3 to, Vector3 flatVel) {
@@ -162,12 +206,11 @@ namespace Entities
             return true;
         }
 
-        private void RotateTowards(Vector3 to) {
+        private void RotateTowards(Vector3 to, float speed) {
             Quaternion targetRotation = Quaternion.LookRotation(to.normalized, Vector3.up);
             m_rb.MoveRotation(Quaternion.RotateTowards(
-                m_rb.rotation, targetRotation, turnSpeed * Time.fixedDeltaTime)
+                m_rb.rotation, targetRotation, speed * Time.fixedDeltaTime)
             );
-
         }
 
         private bool IsFacing(Vector3 to) {
