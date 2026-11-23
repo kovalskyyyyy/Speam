@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using CustomDebug;
+using Saves;
 
 namespace Inventory
 {
@@ -30,6 +31,7 @@ namespace Inventory
         [SerializeField] private bool m_dockLeft = true;
 
         [Header("Items")]
+        [SerializeField] private ItemDatabase m_itemDatabase;
         [SerializeField] private List<ItemData> m_startingItems = new();
         [SerializeField] private ItemData m_testItem;
 
@@ -55,8 +57,33 @@ namespace Inventory
             }
             Instance = this;
 
+            if (m_itemDatabase == null)
+            {
+                m_itemDatabase = ItemDatabase.GetOrCreate();
+            }
+
             EnsureEventSystem();
             InitUI();
+        }
+
+        private void OnEnable()
+        {
+            SaveManager.OnSaving += OnSaving;
+            SaveManager.OnApplied += OnSaveApplied;
+        }
+
+        private void OnDisable()
+        {
+            SaveManager.OnSaving -= OnSaving;
+            SaveManager.OnApplied -= OnSaveApplied;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         private void EnsureEventSystem()
@@ -71,9 +98,17 @@ namespace Inventory
 
         private void Start()
         {
-            for (int i = 0; i < m_startingItems.Count; i++)
+            if (GameState.HasInventoryState)
             {
-                AddItem(m_startingItems[i]);
+                RestoreState(GameState.InventoryItems, m_itemDatabase);
+            }
+            else
+            {
+                for (int i = 0; i < m_startingItems.Count; i++)
+                {
+                    AddItem(m_startingItems[i]);
+                }
+                GameState.SetInventory(CaptureState());
             }
         }
 
@@ -139,6 +174,7 @@ namespace Inventory
             if (m_items.Count >= m_slotCapacity) return false;
 
             m_items.Add(item);
+            GameState.AddInventoryItem(item.Id);
             UpdateUI();
             OnItemAdded?.Invoke(item);
             return true;
@@ -149,9 +185,17 @@ namespace Inventory
             if (item == null) return false;
             if (!m_items.Remove(item)) return false;
 
+            GameState.RemoveInventoryItem(item.Id);
             UpdateUI();
             OnItemRemoved?.Invoke(item);
             return true;
+        }
+
+        public void Clear()
+        {
+            m_items.Clear();
+            GameState.InventoryItems.Clear();
+            UpdateUI();
         }
 
         public bool RemoveItem(string itemId)
@@ -236,6 +280,71 @@ namespace Inventory
             }
         }
 
+        public List<string> CaptureState()
+        {
+            var list = new List<string>(m_items.Count);
+            for (int i = 0; i < m_items.Count; i++)
+            {
+                if (m_items[i] != null)
+                {
+                    list.Add(m_items[i].Id);
+                }
+            }
+            return list;
+        }
+
+        public void RestoreState(List<string> itemIds, ItemDatabase database = null)
+        {
+            m_items.Clear();
+            var db = database != null ? database : (m_itemDatabase != null ? m_itemDatabase : ItemDatabase.GetOrCreate());
+
+            if (itemIds != null)
+            {
+                for (int i = 0; i < itemIds.Count; i++)
+                {
+                    string id = itemIds[i];
+                    if (string.IsNullOrEmpty(id)) continue;
+
+                    ItemData item = db != null ? db.Get(id) : null;
+                    if (item == null)
+                    {
+                        item = m_startingItems.Find(it => it != null && (it.Id == id || it.name == id));
+                        if (item == null && m_testItem != null && (m_testItem.Id == id || m_testItem.name == id))
+                            item = m_testItem;
+                    }
+
+                    if (item != null)
+                    {
+                        if (m_items.Count < m_slotCapacity && !m_items.Contains(item))
+                        {
+                            m_items.Add(item);
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[InventoryController] Предмет с ID '{id}' не найден.", this);
+                    }
+                }
+            }
+
+            GameState.SetInventory(CaptureState());
+            UpdateUI();
+        }
+
+        private void OnSaving(SaveData data)
+        {
+            data.inventory = CaptureState();
+            GameState.SetInventory(data.inventory);
+        }
+
+        private void OnSaveApplied(SaveData data)
+        {
+            if (data != null && data.inventory != null)
+            {
+                RestoreState(data.inventory, m_itemDatabase);
+            }
+        }
+
         #if UNITY_EDITOR
         [Button]
         private void TestToggle() => Toggle();
@@ -252,6 +361,28 @@ namespace Inventory
         {
             ItemData itemToUse = m_testItem != null ? m_testItem : (m_items.Count > 0 ? m_items[0] : null);
             if (itemToUse != null) RemoveItem(itemToUse);
+        }
+
+        [Button]
+        private void TestSaveInventory()
+        {
+            if (SaveManager.Instance != null)
+            {
+                SaveManager.Instance.Save(0);
+            }
+        }
+
+        [Button]
+        private void TestLoadInventory()
+        {
+            if (SaveManager.Instance != null)
+            {
+                var data = SaveManager.Instance.Read(0);
+                if (data != null)
+                {
+                    SaveManager.Instance.Apply(data);
+                }
+            }
         }
         #endif
     }
