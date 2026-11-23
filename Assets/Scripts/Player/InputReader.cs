@@ -1,5 +1,7 @@
 using UnityEngine.InputSystem;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using System.Collections.Generic;
 using System;
 
 namespace Player
@@ -8,6 +10,24 @@ namespace Player
     public class InputReader : ScriptableObject, InputSystem_Actions.IPlayerActions
     {
         public event Action<InputAction.CallbackContext> onPoint;
+
+        public Vector2 MousePosition => Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+
+        private readonly List<RaycastResult> m_uiRaycastResults = new();
+        private PointerEventData m_pointerEventData;
+
+        public bool IsPointerOverUI()
+        {
+            if (EventSystem.current == null) return false;
+            if (EventSystem.current.IsPointerOverGameObject()) return true;
+
+            if (Mouse.current == null) return false;
+            m_pointerEventData ??= new PointerEventData(EventSystem.current);
+            m_pointerEventData.position = MousePosition;
+            m_uiRaycastResults.Clear();
+            EventSystem.current.RaycastAll(m_pointerEventData, m_uiRaycastResults);
+            return m_uiRaycastResults.Count > 0;
+        }
 
         public void OnPoint(InputAction.CallbackContext context) 
         {
