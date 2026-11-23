@@ -27,14 +27,6 @@ namespace Player.States
         
         public override void FixedStateUpdate()
         {
-            // Vector3 velocity = m_data.walkControl.velocity;
-            // velocity.y = 0f;
-            // Vector3 velocityNormilized = velocity/3.6f;
-            // float speedNormalized = Vector3.Dot(velocityNormilized, m_data.body.transform.forward);
-            //
-            // m_data.animationView.SetSpeed(speedNormalized);
-            //
-            
             if (!m_wasMouseCancelled && !m_startedOverUI)
             {
                 if (!m_data.inputReader.IsPointerOverUI())
