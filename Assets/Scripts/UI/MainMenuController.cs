@@ -43,9 +43,22 @@ namespace Speam.UI
         {
             if (m_saveInfoText == null) return;
 
-            if (SaveManager.Instance == null || !SaveManager.Instance.HasSave(0))
+            bool hasSave = SaveManager.Instance != null && SaveManager.Instance.HasSave(0);
+
+            if (!hasSave)
             {
                 m_saveInfoText.text = "Сохранений пока нет";
+                // Сделать текст кнопки Continue полупрозрачным
+                if (m_continueButton != null)
+                {
+                    var text = m_continueButton.GetComponentInChildren<Text>();
+                    if (text != null)
+                    {
+                        Color newColor = text.color;
+                        newColor.a = 0.5f; // 50% opacity
+                        text.color = newColor;
+                    }
+                }
                 return;
             }
 
@@ -57,6 +70,18 @@ namespace Speam.UI
             else
             {
                 m_saveInfoText.text = "Сохранение найдено";
+            }
+
+            // Восстановить непрозрачность текста кнопки Continue, если она была затухана
+            if (m_continueButton != null)
+            {
+                var text = m_continueButton.GetComponentInChildren<Text>();
+                if (text != null)
+                {
+                    Color newColor = text.color;
+                    newColor.a = 1.0f; // Полная непрозрачность
+                    text.color = newColor;
+                }
             }
         }
     }

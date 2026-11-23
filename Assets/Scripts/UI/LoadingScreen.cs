@@ -3,17 +3,65 @@ using UnityEngine.UI;
 
 namespace Speam.UI
 {
-    /// <summary>Полноэкранный экран загрузки, живёт на [GameRoot].</summary>
+    /// <summary>Полноэкранный экран загрузки, живёт на [GameRoot].
+    /// 
+    /// Дизайнеры могут заменить этот экран, поместив префаб в Assets/Resources/UI/LoadingScreen.prefab.
+    /// Если префаб найден, он используется вместо программного создания UI.
+    /// </summary>
     public class LoadingScreen : MonoBehaviour
     {
-        GameObject m_root;
-        RectTransform m_fill;
-        Text m_label;
+        private GameObject m_root;
+        private RectTransform m_fill;
+        private Text m_label;
 
         void Awake()
         {
-            Build();
+            // Сначала пытаемся загрузить префаб от дизайнера
+            if (TryUseDesignerPrefab())
+            {
+                // Префаб использован, сборку не меняем
+            }
+
             Hide();
+        }
+
+        private bool TryUseDesignerPrefab()
+        {
+            // Пытаемся загрузить префаб из Resources/UI/LoadingScreen
+            var prefab = Resources.Load<GameObject>("UI/LoadingScreen");
+            if (prefab != null)
+            {
+                InstantiateDesignerPrefab(prefab);
+                return true;
+            }
+
+            // Также проверяем сериализованное переопределение (если задано в инспекторе)
+            return false;
+        }
+
+        private void InstantiateDesignerPrefab(GameObject prefab)
+        {
+            var instance = Instantiate(prefab);
+            instance.transform.SetParent(transform, false);
+
+            // Ищем элементы по именам, аналогично Built-ин версии
+            m_root = instance;
+
+            m_fill = null;
+            m_label = null;
+
+            var fillTransform = instance.transform.Find("BarFill");
+            if (fillTransform != null)
+            {
+                m_fill = fillTransform as RectTransform;
+            }
+
+            var labelTransform = instance.transform.Find("Label");
+            if (labelTransform != null)
+            {
+                m_label = labelTransform.GetComponent<Text>();
+            }
+            
         }
 
         void Build()
