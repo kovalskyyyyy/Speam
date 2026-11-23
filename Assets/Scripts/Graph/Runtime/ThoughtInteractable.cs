@@ -19,11 +19,11 @@ public class ThoughtInteractable : Interactable
             return;
         }
 
-        /*if (ThoughtPresenter.Instance == null)
+        if (ThoughtPresenter.Instance == null)
         {
             Debug.LogWarning("ThoughtInteractable: ThoughtPresenter не найден на сцене.", this);
             return;
-        }*/
+        }
 
         int index = Random.Range(0, thoughts.Count);
 
@@ -34,6 +34,6 @@ public class ThoughtInteractable : Interactable
         }
 
         lastIndex = index;
-        //ThoughtPresenter.Instance.Show(thoughts[index]);
+        ThoughtPresenter.Instance.Show(thoughts[index]);
     }
 }
