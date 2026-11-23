@@ -1,4 +1,5 @@
 using Saves;
+using UnityEditor.Animations;
 using UnityEngine;
 
 namespace DialogueSystem.Runtime
@@ -9,6 +10,7 @@ namespace DialogueSystem.Runtime
     public class DialogueTrigger : Interactable
     {
         [SerializeField] DialogueAsset dialogue;
+        [SerializeField] private Animator animatorController;
 
         NpcSaveable npcSaveable;
 
@@ -16,6 +18,22 @@ namespace DialogueSystem.Runtime
         {
             base.Awake();
             npcSaveable = GetComponent<NpcSaveable>();
+        }
+        void Start()
+        {
+            // Subscribe to dialogue events
+            if (DialogueRunner.Instance != null)
+            {
+                DialogueRunner.Instance.Ended += OnDialogueEnded;
+            }
+        }
+
+        void OnDisable()
+        {
+            if (DialogueRunner.Instance != null)
+            {
+                DialogueRunner.Instance.Ended -= OnDialogueEnded;
+            }
         }
 
         public override void Interact()
@@ -36,8 +54,17 @@ namespace DialogueSystem.Runtime
                 Debug.LogWarning("DialogueTrigger: DialogueRunner не найден на сцене.", this);
                 return;
             }
-
+            OnDialogueStarted();
             DialogueRunner.Instance.StartDialogue(asset);
         }
+        private void OnDialogueStarted()
+        {
+            animatorController.SetBool("IsTalking", true);
+        }
+
+        private void OnDialogueEnded()
+        {
+            animatorController.SetBool("IsTalking", false);
+        }  
     }
 }
