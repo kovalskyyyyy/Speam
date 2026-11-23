@@ -37,6 +37,7 @@ namespace Saves
         public List<string> doneActions = new();         // id выполненных action-нод
         public List<string> flags = new();               // произвольные флаги: "gate_opened"
         public List<QuestState> quests = new();
+        public List<string> inventory = new();            // id предметов в инвентаре
     }
 
     /// <summary>Рантайм-состояние игры. Всё, что должно пережить сохранение, живёт здесь.</summary>
@@ -46,6 +47,8 @@ namespace Saves
         public static readonly HashSet<string> DoneActions = new();
         public static readonly HashSet<string> Flags = new();
         public static readonly Dictionary<string, QuestState> Quests = new();
+        public static readonly List<string> InventoryItems = new();
+        public static bool HasInventoryState { get; set; }
 
         public static event Action Changed;
 
@@ -77,9 +80,42 @@ namespace Saves
         { GetOrCreateQuest(questId).completed = true; Changed?.Invoke(); }
         public static bool IsQuestCompleted(string id) => Quests.TryGetValue(id, out var q) && q.completed;
 
+        // Инвентарь
+        public static void SetInventory(IEnumerable<string> items)
+        {
+            InventoryItems.Clear();
+            if (items != null)
+                InventoryItems.AddRange(items);
+            HasInventoryState = true;
+            Changed?.Invoke();
+        }
+
+        public static bool HasItem(string itemId) => !string.IsNullOrEmpty(itemId) && InventoryItems.Contains(itemId);
+
+        public static void AddInventoryItem(string itemId)
+        {
+            if (!string.IsNullOrEmpty(itemId) && !InventoryItems.Contains(itemId))
+            {
+                InventoryItems.Add(itemId);
+                HasInventoryState = true;
+                Changed?.Invoke();
+            }
+        }
+
+        public static void RemoveInventoryItem(string itemId)
+        {
+            if (InventoryItems.Remove(itemId))
+            {
+                HasInventoryState = true;
+                Changed?.Invoke();
+            }
+        }
+
         public static void Clear()
         {
             CompletedDialogues.Clear(); DoneActions.Clear(); Flags.Clear(); Quests.Clear();
+            InventoryItems.Clear();
+            HasInventoryState = false;
         }
     }
 }

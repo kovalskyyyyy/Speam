@@ -16,6 +16,9 @@ namespace Saves
     {
         public static SaveManager Instance { get; private set; }
 
+        public static event Action<SaveData> OnSaving;
+        public static event Action<SaveData> OnApplied;
+
         [SerializeField] DialogueDatabase dialogueDb;
 
         [Tooltip("Префабы НПС, которые спавнятся кодом (у каждого свой prefabId).")]
@@ -77,6 +80,9 @@ namespace Saves
             data.doneActions.AddRange(GameState.DoneActions);
             data.flags.AddRange(GameState.Flags);
             data.quests.AddRange(GameState.Quests.Values);
+            data.inventory.AddRange(GameState.InventoryItems);
+
+            OnSaving?.Invoke(data);
 
             // Пишем во временный файл, потом подменяем: вылет посреди записи не убьёт старый сейв.
             string path = PathFor(slot);
@@ -137,6 +143,9 @@ namespace Saves
                     if (q != null && !string.IsNullOrEmpty(q.questId))
                         GameState.Quests[q.questId] = q;
 
+            if (data.inventory != null)
+                GameState.SetInventory(data.inventory);
+
             // 2. Игрок
             var player = FindPlayer();
             if (player != null)
@@ -184,6 +193,8 @@ namespace Saves
             foreach (var kv in existing)
                 if (!restored.Contains(kv.Key))
                     Destroy(kv.Value.gameObject);
+
+            OnApplied?.Invoke(data);
         }
     }
 }
