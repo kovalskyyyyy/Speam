@@ -15,5 +15,16 @@ namespace Inventory
         public string ItemName => string.IsNullOrEmpty(m_itemName) ? name : m_itemName;
         public string Description => m_description;
         public Sprite Icon => m_icon;
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (string.IsNullOrEmpty(m_id))
+            {
+                m_id = name;
+                UnityEditor.EditorUtility.SetDirty(this);
+            }
+        }
+#endif
     }
 }
